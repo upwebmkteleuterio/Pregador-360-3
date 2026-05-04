@@ -16,7 +16,10 @@ import {
   BookOpenCheck,
   Sparkles,
   Search,
-  BookOpen
+  BookOpen,
+  Languages,
+  Landmark,
+  Scroll
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useStore } from '@/src/store/useStore';
@@ -143,17 +146,17 @@ export default function LandingPage() {
               
               <div className="space-y-4">
                 <SermonDetail 
-                  icon={<BookOpenCheck className="text-yellow-500" size={20} />}
+                  icon={<Languages className="text-yellow-500" size={20} />}
                   title="Análise Lexical e Exegese"
                   desc="Identificação de palavras-chave no Grego ou Hebraico com significados e aplicações originais."
                 />
                 <SermonDetail 
-                  icon={<CheckCircle2 className="text-yellow-500" size={20} />}
+                  icon={<Landmark className="text-yellow-500" size={20} />}
                   title="Estrutura de 4 Pontos"
                   desc="Cada ponto inclui explicação profunda, referências cruzadas, aplicação prática e ilustrações."
                 />
                 <SermonDetail 
-                  icon={<CheckCircle2 className="text-yellow-500" size={20} />}
+                  icon={<Scroll className="text-yellow-500" size={20} />}
                   title="Contexto Histórico"
                   desc="Explicação detalhada sobre usos, costumes e o cenário bíblico da época do texto base."
                 />
