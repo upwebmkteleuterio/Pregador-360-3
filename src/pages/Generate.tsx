@@ -188,7 +188,7 @@ export default function Generate() {
           ) : (
             <>
               <Sparkles size={20} />
-              Gerar com IA
+              Gerar conteúdo
             </>
           )}
         </button>
