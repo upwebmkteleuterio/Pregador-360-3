@@ -360,12 +360,12 @@ export default function LandingPage() {
             <span className="font-bold text-lg text-[#09090b]">Pregador 360</span>
           </div>
           
-          <p className="text-[#71717a] text-sm">© 2024 Pregador 360. Todos os direitos reservados.</p>
+          <p className="text-[#3f3f46] text-sm">© 2026 Pregador 360. Todos os direitos reservados.</p>
           
           <div className="flex gap-6">
-            <a href="#" className="text-[#71717a] hover:text-yellow-500 transition-colors"><Instagram size={20} /></a>
-            <a href="#" className="text-[#71717a] hover:text-yellow-500 transition-colors"><Youtube size={20} /></a>
-            <a href="#" className="text-[#71717a] hover:text-yellow-500 transition-colors"><Mail size={20} /></a>
+            <a href="#" className="text-[#3f3f46] hover:text-yellow-500 transition-colors"><Instagram size={20} /></a>
+            <a href="#" className="text-[#3f3f46] hover:text-yellow-500 transition-colors"><Youtube size={20} /></a>
+            <a href="#" className="text-[#3f3f46] hover:text-yellow-500 transition-colors"><Mail size={20} /></a>
           </div>
         </div>
       </footer>
