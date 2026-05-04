@@ -79,7 +79,7 @@ export default function LandingPage() {
             initial="hidden" whileInView="visible" variants={revealVariants}
             className="inline-block px-4 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-700 text-[10px] font-bold uppercase tracking-widest mb-6"
           >
-            Tecnologia Proposital para o Reino
+            Crie sermões com profundidade, clareza e propósito em minutos
           </motion.div>
           
           <motion.h1
