@@ -19,7 +19,9 @@ import {
   BookOpen,
   Languages,
   Landmark,
-  Scroll
+  Scroll,
+  Clock,
+  Lightbulb
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useStore } from '@/src/store/useStore';
@@ -306,7 +308,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard
-              icon={<Zap className="text-yellow-600" size={28} />}
+              icon={<Clock className="text-yellow-600" size={28} />}
               title="Ganhe Tempo para a Oração"
               desc="Deixe que nossa tecnologia auxilie na estrutura técnica do seu esboço, para que você dedique mais tempo ao que realmente importa."
             />
@@ -317,7 +319,7 @@ export default function LandingPage() {
               delay={0.2}
             />
             <FeatureCard
-              icon={<Zap className="text-yellow-600" size={28} />}
+              icon={<Lightbulb className="text-yellow-600" size={28} />}
               title="Clareza na Mensagem"
               desc="Ferramentas que ajudam a conectar passagens bíblicas e temas contemporâneos, garantindo clareza e impacto."
               delay={0.4}
