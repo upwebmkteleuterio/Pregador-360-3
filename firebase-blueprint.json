@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "Plan": {
+      "title": "Plano",
+      "description": "Configuração de planos de assinatura do sistema",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "string" },
+        "credits": { "type": "number" },
+        "paymentLink": { "type": "string" },
+        "features": { "type": "array", "items": { "type": "string" } },
+        "recommended": { "type": "boolean" },
+        "type": { "type": "string", "enum": ["free", "pro"] }
+      },
+      "required": ["name", "description", "price", "credits", "features"]
+    },
+    "User": {
+      "title": "Usuário",
+      "description": "Perfil do usuário e dados de assinatura",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "planId": { "type": "string" },
+        "planName": { "type": "string" },
+        "creditsUsed": { "type": "number" },
+        "totalCredits": { "type": "number" },
+        "isAdmin": { "type": "boolean" }
+      },
+      "required": ["email", "planId"]
+    }
+  },
+  "firestore": {
+    "plans": {
+      "schema": "Plan",
+      "description": "Coleção de planos disponíveis"
+    },
+    "users": {
+      "schema": "User",
+      "description": "Perfis dos usuários"
+    }
+  }
+}

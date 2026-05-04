@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    --bg-main: #09090b; /* zinc-950 */
+    --bg-card: #18181b; /* zinc-900 */
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa; /* zinc-400 */
+    --border-color: #27272a; /* zinc-800 */
+  }
+
+  .light {
+    --bg-main: #f4f4f5; /* zinc-100 */
+    --bg-card: #ffffff;
+    --text-primary: #09090b; /* zinc-950 */
+    --text-secondary: #52525b; /* zinc-600 */
+    --border-color: #e4e4e7; /* zinc-200 */
+  }
+
+  body {
+    @apply bg-[var(--bg-main)] text-[var(--text-primary)] font-sans antialiased transition-colors duration-300;
+  }
+}
+
+/* Scrollbar adaptada ao tema */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-[var(--bg-main)];
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-[var(--border-color)] rounded-full;
+}
