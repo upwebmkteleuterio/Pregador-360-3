@@ -77,7 +77,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto text-center relative z-10">
           <motion.div
             initial="hidden" whileInView="visible" variants={revealVariants}
-            className="inline-block px-4 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-700 text-[10px] font-bold uppercase tracking-widest mb-6"
+            className="block text-[#52525b] text-[10px] font-bold uppercase tracking-widest mb-6"
           >
             Crie sermões com profundidade, clareza e propósito em minutos
           </motion.div>
