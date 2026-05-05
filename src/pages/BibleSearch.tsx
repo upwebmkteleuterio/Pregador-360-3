@@ -117,7 +117,7 @@ export default function BibleSearch() {
           {loading ? (
             <><Loader2 className="animate-spin" size={20} /> Consultando...</>
           ) : (
-            <><Sparkles size={20} /> Consultar IA</>
+            <><Sparkles size={20} /> Consultar</>
           )}
         </button>
       </section>
