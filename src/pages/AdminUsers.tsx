@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, User, Mail, Shield, Search, Calendar, Loader2 } from 'lucide-react';
+import { ChevronLeft, User, Mail, Shield, Search, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { supabase } from '@/src/integrations/supabase/client';
 
@@ -19,23 +19,18 @@ export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          updated_at,
-          plans ( name )
-        `);
+      setError(null);
+      try {
+        // Chamada segura para a Edge Function
+        const { data, error: funcError } = await supabase.functions.invoke('admin-get-users');
 
-      if (error) {
-        console.error("Erro de permissão ou rede:", error.message);
-        setUsers([]);
-      } else if (data) {
+        if (funcError) throw funcError;
+        if (!data) throw new Error("Nenhum dado retornado.");
+
         const formattedUsers: UserData[] = data.map((u: any) => ({
           id: u.id,
           displayName: u.full_name || 'Usuário Sem Nome',
@@ -43,9 +38,15 @@ export default function AdminUsers() {
           planName: u.plans?.name || 'Gratuito',
           createdAt: u.updated_at ? new Date(u.updated_at).toLocaleDateString('pt-BR') : 'N/A',
         }));
+        
         setUsers(formattedUsers);
+      } catch (err: any) {
+        console.error("Erro ao buscar usuários via Edge Function:", err);
+        setError(err.message || "Erro de permissão ao buscar dados.");
+        setUsers([]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUsers();
@@ -67,7 +68,7 @@ export default function AdminUsers() {
         </button>
         <div className="flex flex-col">
           <h1 className="text-xl text-yellow-500 font-bold">Gerenciar Usuários</h1>
-          <p className="text-[10px] text-[var(--text-secondary)] font-medium uppercase tracking-tighter">Acesso Restrito ao Administrador</p>
+          <p className="text-[10px] text-[var(--text-secondary)] font-medium uppercase tracking-tighter">Acesso Seguro via Edge Function</p>
         </div>
       </div>
 
@@ -81,6 +82,13 @@ export default function AdminUsers() {
         />
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
       </div>
+
+      {error && (
+        <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-4 text-red-500 text-sm">
+          <AlertCircle size={20} />
+          <span>{error}</span>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between px-2">
