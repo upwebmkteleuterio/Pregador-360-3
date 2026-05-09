@@ -14,8 +14,7 @@ export interface GeneratedContent {
 export const generateAIContent = async (
   type: ItemType,
   topic: string,
-  tone: string,
-  userId: string
+  tone: string
 ) => {
   const model = "gemini-3-flash-preview";
 

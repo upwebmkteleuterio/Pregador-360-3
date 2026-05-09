@@ -32,8 +32,7 @@ export default function Generate() {
       const data = await generateAIContent(
         generatorForm.type,
         generatorForm.topic,
-        generatorForm.tone,
-        auth.user.id
+        generatorForm.tone
       );
 
       const contentId = await databaseService.saveNewContent({

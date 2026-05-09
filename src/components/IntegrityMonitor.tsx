@@ -17,8 +17,8 @@ export function IntegrityMonitor() {
     if (!auth.user?.id) return;
     setIsScanning(true);
     try {
-      const contentReports = await integrityService.runDeepScan('contents', auth.user.id);
-      const planReports = await integrityService.runDeepScan('plans', auth.user.id);
+      const contentReports = await integrityService.runDeepScan('contents');
+      const planReports = await integrityService.runDeepScan('plans');
       
       const allReports = [...contentReports, ...planReports];
       setReports(allReports);
@@ -103,7 +103,7 @@ export function IntegrityMonitor() {
                 <div className="bg-red-600 text-white p-4 flex items-center gap-4">
                   <ShieldAlert size={24} className="animate-bounce" />
                   <div>
-                    <h4 className="font-bold text-xs uppercase">Sincronização Interrompida</h4>
+                    h4 className="font-bold text-xs uppercase">Sincronização Interrompida</h4>
                     <p className="text-[10px] opacity-90">Dados no banco diferem do estado da aplicação.</p>
                   </div>
                 </div>

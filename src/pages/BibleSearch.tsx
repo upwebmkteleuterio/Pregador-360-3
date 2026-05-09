@@ -42,7 +42,7 @@ export default function BibleSearch() {
 
     try {
       if (!auth.user?.id) throw new Error("Usuário não autenticado.");
-      const data = await consultBibleAi(query, auth.user.id);
+      const data = await consultBibleAi(query);
       
       if (data.remainingCredits !== undefined) {
         setSubscriptionState({ credits: data.remainingCredits });
@@ -136,7 +136,7 @@ export default function BibleSearch() {
       {result ? (
         <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-3xl mx-auto space-y-8" ref={resultRef}>
           <article className="space-y-4">
-            <div className="markdown-body prose prose-invert prose-sm max-w-none text-[var(--text-primary)] leading-relaxed bg-[var(--bg-card)]/50 p-6 md:p-10 rounded-[2.5rem] border border-[var(--border-color)] shadow-2xl">
+            <div className="markdown-body prose prose-invert prose-sm max-w-none text-[var(--text-primary)] font-sans leading-relaxed bg-[var(--bg-card)]/50 p-6 md:p-10 rounded-[2.5rem] border border-[var(--border-color)] shadow-2xl">
               <ReactMarkdown>{result.cleanDisplayContent}</ReactMarkdown>
             </div>
 

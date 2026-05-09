@@ -10,7 +10,7 @@ export interface IntegrityReport {
 }
 
 export const integrityService = {
-  runDeepScan: async (tableName: string, userId: string): Promise<IntegrityReport[]> => {
+  runDeepScan: async (tableName: string): Promise<IntegrityReport[]> => {
     const reports: IntegrityReport[] = [];
     
     // 1. Scan de RLS (Verdade do Usuário Autenticado)

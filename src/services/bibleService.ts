@@ -8,7 +8,7 @@ export interface BibleAiResult {
   remainingCredits?: number;
 }
 
-export async function consultBibleAi(query: string, userId: string): Promise<BibleAiResult> {
+export async function consultBibleAi(query: string): Promise<BibleAiResult> {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
