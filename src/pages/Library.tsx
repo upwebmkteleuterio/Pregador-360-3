@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
 import { Search, Plus, Tag, Trash2, Copy, ChevronRight } from 'lucide-react';
@@ -14,6 +14,13 @@ export default function Library() {
     duplicateItem, 
     tags 
   } = useStore();
+
+  // Limpa a busca ao sair da tela (unmount)
+  useEffect(() => {
+    return () => {
+      setLibraryState({ searchQuery: '' });
+    };
+  }, [setLibraryState]);
 
   const filteredItems = items.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(library.searchQuery.toLowerCase()) ||

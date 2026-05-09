@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useStore } from '@/src/store/useStore';
 import { Search, Plus, StickyNote, ChevronRight, Trash2, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,13 @@ import { useNavigate } from 'react-router-dom';
 export default function NotesList() {
   const navigate = useNavigate();
   const { notes, notesLibrary, setNotesLibraryState, setModalState, tags } = useStore();
+
+  // Limpa a busca ao sair da tela (unmount)
+  useEffect(() => {
+    return () => {
+      setNotesLibraryState({ searchQuery: '' });
+    };
+  }, [setNotesLibraryState]);
 
   const filteredNotes = notes.filter(note => 
     note.title.toLowerCase().includes(notesLibrary.searchQuery.toLowerCase()) ||
