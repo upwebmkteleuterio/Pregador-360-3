@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStore } from '@/src/store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Check, Zap, ShieldCheck, HelpCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, Check, Zap, ShieldCheck, HelpCircle } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { databaseService } from '../services/databaseService';
 
 export default function ChoosePlan() {
   const navigate = useNavigate();
-  const { plans, subscription, auth, setSubscriptionState } = useStore();
-  const [testLoadingId, setTestLoadingId] = useState<string | null>(null);
+  const { plans, subscription, auth } = useStore();
 
   const handleSelectPlan = (planId: string, type: 'free' | 'pro', paymentLink?: string) => {
     const isCurrent = subscription.planId === planId;
@@ -31,33 +29,6 @@ export default function ChoosePlan() {
       }
     } else {
       alert('Link de pagamento não configurado.');
-    }
-  };
-
-  const handleTestPlan = async (planId: string) => {
-    if (!auth.user?.id) return;
-    setTestLoadingId(planId);
-    
-    try {
-      const { error } = await databaseService.debugSetUserPlan(auth.user.id, planId);
-      if (error) throw new Error(error);
-      
-      const plan = plans.find(p => p.id === planId);
-      if (plan) {
-        setSubscriptionState({
-          planId: plan.id,
-          planName: plan.name,
-          planType: plan.type,
-          status: 'active',
-          credits: plan.credits,
-          nextRenewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')
-        });
-        alert(`Sucesso! Seu plano foi alterado para ${plan.name} (Modo Teste)`);
-      }
-    } catch (err: any) {
-      alert('Erro ao simular plano: ' + err.message);
-    } finally {
-      setTestLoadingId(null);
     }
   };
 
@@ -141,17 +112,6 @@ export default function ChoosePlan() {
                   >
                     {isCurrent ? 'Plano Atual' : (plan.type === 'free' ? 'Voltar ao Básico' : 'Assinar Agora')}
                   </button>
-
-                  {auth.user?.isAdmin && plan.type === 'pro' && !isCurrent && (
-                    <button
-                      onClick={() => handleTestPlan(plan.id)}
-                      disabled={testLoadingId === plan.id}
-                      className="w-full py-3 rounded-xl border border-dashed border-yellow-500/30 text-yellow-500/50 text-[10px] font-bold uppercase tracking-widest hover:text-yellow-500 hover:border-yellow-500 transition-all flex items-center justify-center gap-2"
-                    >
-                      {testLoadingId === plan.id ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
-                      {testLoadingId === plan.id ? 'Ativando...' : 'Testar este plano (Admin)'}
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
