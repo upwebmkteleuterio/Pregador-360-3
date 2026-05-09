@@ -6,6 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+async function verifySignature(payload: string, signature: string, secret: string) {
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(secret);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    keyData,
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"]
+  );
+
+  const data = encoder.encode(payload);
+  const hmac = await crypto.subtle.sign("HMAC", key, data);
+  const digest = Array.from(new Uint8Array(hmac))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return digest === signature;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -16,8 +36,28 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    const body = await req.json()
-    console.log("[kiwify-webhook] Payload completo:", JSON.stringify(body, null, 2))
+    // Pegamos a URL e a assinatura dos parâmetros
+    const url = new URL(req.url)
+    const signature = url.searchParams.get('signature')
+    const webhookSecret = Deno.env.get('KIWIFY_WEBHOOK_SECRET')
+
+    // Lemos o corpo bruto para verificação
+    const rawBody = await req.text()
+
+    if (!signature || !webhookSecret) {
+      console.error("[kiwify-webhook] Assinatura ou Secret ausente")
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    const isValid = await verifySignature(rawBody, signature, webhookSecret)
+    if (!isValid) {
+      console.error("[kiwify-webhook] Assinatura inválida")
+      return new Response(JSON.stringify({ error: "Invalid signature" }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Se for válida, parseamos o JSON
+    const body = JSON.parse(rawBody)
+    console.log("[kiwify-webhook] Payload verificado e processado")
 
     // Tenta obter o ID do produto de múltiplos caminhos comuns na Kiwify
     const kiwifyProductId = body.product_id || body.Product?.product_id
