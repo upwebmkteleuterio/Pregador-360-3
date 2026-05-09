@@ -11,18 +11,14 @@ export function AiCreditsModal() {
   const { modals, setModalState, subscription, auth } = useStore();
   const navigate = useNavigate();
 
-  // Agora usamos os valores reais sincronizados do banco de dados
   const totalCredits = subscription.totalCredits || 30;
   const remaining = subscription.credits;
   
-  // Cálculo da barra: Full = 100%, Zero = 0%
-  // Queremos que ela esvazie conforme usa, então a largura é baseada no saldo restante
   const percentage = Math.min(100, Math.max(0, (remaining / totalCredits) * 100));
   const consumed = Math.max(0, totalCredits - remaining);
 
-  // Lógica de exibição de status baseada no plano
   const getStatusDisplay = () => {
-    if (subscription.plan === 'Free') return 'Gratuito';
+    if (subscription.planType === 'free') return 'Gratuito';
     return subscription.status === 'active' ? 'Ativo' : 'Pendente';
   };
 
@@ -39,7 +35,7 @@ export function AiCreditsModal() {
             <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest block mb-1">Status Atual</span>
             <div className="flex justify-between items-end mb-6">
               <div>
-                <p className="text-xl font-bold text-[var(--text-primary)]">{subscription.plan === 'Premium' ? 'Plano Pro' : 'Plano Gratuito'}</p>
+                <p className="text-xl font-bold text-[var(--text-primary)]">{subscription.planName}</p>
                 <p className="text-xs text-[var(--text-secondary)] mt-1">Status: {getStatusDisplay()}</p>
               </div>
               <Sparkles className="text-yellow-500" size={24} />

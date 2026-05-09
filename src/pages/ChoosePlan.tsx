@@ -6,10 +6,10 @@ import { cn } from '@/src/lib/utils';
 
 export default function ChoosePlan() {
   const navigate = useNavigate();
-  const { setSubscriptionState, plans, subscription, auth } = useStore();
+  const { plans, subscription, auth } = useStore();
 
   const handleSelectPlan = (planId: string, type: 'free' | 'pro', paymentLink?: string) => {
-    const isCurrent = subscription.plan === (type === 'free' ? 'Free' : 'Premium');
+    const isCurrent = subscription.planId === planId;
     if (isCurrent) return;
 
     if (type === 'free') {
@@ -25,7 +25,6 @@ export default function ChoosePlan() {
         
         window.open(checkoutUrl.toString(), '_blank');
       } catch (e) {
-        // Fallback if URL is invalid or not absolute
         window.open(paymentLink, '_blank');
       }
     } else {
@@ -54,8 +53,7 @@ export default function ChoosePlan() {
 
       <div className="space-y-8">
         {plans.map((plan) => {
-          const isCurrent = (plan.type === 'free' && subscription.plan === 'Free') || 
-                           (plan.type === 'pro' && subscription.plan === 'Premium');
+          const isCurrent = subscription.planId === plan.id;
 
           return (
             <div 

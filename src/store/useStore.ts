@@ -97,7 +97,9 @@ interface AppState {
     } | null;
   };
   subscription: {
-    plan: 'Free' | 'Premium';
+    planId: string | null;
+    planName: string;
+    planType: 'free' | 'pro';
     status: 'active' | 'inactive' | 'pending';
     nextRenewalDate: string;
     credits: number;
@@ -157,7 +159,7 @@ export const useStore = create<AppState>()(
       notesLibrary: { searchQuery: '' },
       preachingMode: { fontSize: 32, scrollSpeed: 1 },
       auth: { isAuthenticated: false, user: null },
-      subscription: { plan: 'Free', status: 'inactive', nextRenewalDate: 'N/A', credits: 0, totalCredits: 30 },
+      subscription: { planId: null, planName: 'Carregando...', planType: 'free', status: 'inactive', nextRenewalDate: 'N/A', credits: 0, totalCredits: 30 },
       theme: 'light',
       toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
       setItems: (items) => set({ items }),

@@ -8,11 +8,10 @@ export default function Subscription() {
   const navigate = useNavigate();
   const { subscription, payments, plans } = useStore();
 
-  const currentPlanData = plans.find(p => p.name === subscription.plan);
-  const planPrice = currentPlanData?.price || (subscription.plan === 'Free' ? '0' : '39,90');
+  const currentPlanData = plans.find(p => p.id === subscription.planId);
+  const planPrice = currentPlanData?.price || (subscription.planType === 'free' ? '0,00' : '39,90');
 
-  // No plano gratuito, o status deve ser sempre exibido como Ativo
-  const isActive = subscription.plan === 'Free' || subscription.status === 'active';
+  const isActive = subscription.planType === 'free' || subscription.status === 'active';
 
   const getStatusColor = (status: string) => {
     switch(status.toLowerCase()) {
@@ -70,7 +69,7 @@ export default function Subscription() {
                   <span className="font-sans text-xs font-bold uppercase tracking-widest text-yellow-500 mb-2 block">
                     Seu Plano Atual
                   </span>
-                  <h2 className="text-2xl text-[var(--text-primary)]">{subscription.plan === 'Premium' ? 'Plano Pro' : 'Plano Gratuito'}</h2>
+                  <h2 className="text-2xl text-[var(--text-primary)]">{subscription.planName}</h2>
                 </div>
                 <div className="bg-[var(--bg-card)]/50 px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-[var(--border-color)]/50">
                   <span className={cn(

@@ -65,10 +65,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const planInfo = data.plans;
       setSubscriptionState({
-        plan: (planInfo?.name || 'Free') as 'Free' | 'Premium',
+        planId: planInfo?.id || null,
+        planName: planInfo?.name || 'Gratuito',
+        planType: (planInfo?.type || 'free') as 'free' | 'pro',
         status: (data.status || 'inactive') as 'active' | 'inactive' | 'pending',
         credits: data.current_plan_credits ?? 0,
-        totalCredits: planInfo?.credits ?? 30, // Pega o total do plano ou fallback 30
+        totalCredits: planInfo?.credits ?? 30,
         nextRenewalDate: data.subscription_expires_at ? new Date(data.subscription_expires_at).toLocaleDateString('pt-BR') : 'N/A'
       });
     }
