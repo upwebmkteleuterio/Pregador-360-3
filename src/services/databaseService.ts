@@ -33,6 +33,22 @@ export const databaseService = {
     };
   },
 
+  // FUNÇÃO DE TESTE (DEBUG)
+  debugSetUserPlan: async (userId: string, planId: string) => {
+    const { data: plan } = await supabase.from('plans').select('*').eq('id', planId).single();
+    if (!plan) return { error: 'Plano não encontrado' };
+
+    return await supabase
+      .from('profiles')
+      .update({
+        plan_id: planId,
+        status: 'active',
+        current_plan_credits: plan.credits,
+        subscription_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      })
+      .eq('id', userId);
+  },
+
   // --- CONTEÚDOS ---
 
   saveNewContent: async (userId: string, item: Partial<ContentItem>): Promise<string | null> => {
