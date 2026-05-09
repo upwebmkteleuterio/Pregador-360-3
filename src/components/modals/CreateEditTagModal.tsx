@@ -8,7 +8,7 @@ import { databaseService } from '@/src/services/databaseService';
 import { ModalBase } from './ModalBase';
 
 export function CreateEditTagModal() {
-  const { modals, setModalState, tags, addTag, updateTag, auth } = useStore();
+  const { modals, setModalState, tags, addTag, updateTag } = useStore();
   const editingTag = tags.find(t => t.id === modals.currentTagId);
   
   const [name, setName] = useState('');
@@ -31,17 +31,17 @@ export function CreateEditTagModal() {
   ];
 
   const handleSave = async () => {
-    if (!name.trim() || !auth.user?.id) return;
+    if (!name.trim()) return;
     setIsSaving(true);
     
     try {
       if (editingTag) {
-        const { error } = await databaseService.updateTag(auth.user.id, editingTag.id, { name, color });
+        const { error } = await databaseService.updateTag(editingTag.id, { name, color });
         if (!error) updateTag(editingTag.id, { name, color });
       } else {
-        const { data, error } = await databaseService.createTag(auth.user.id, name, color);
+        const { data, error } = await databaseService.createTag(name, color);
         if (data && !error) {
-          addTag(data.name, data.color);
+          addTag(data);
         }
       }
       setModalState('createEditTagModalOpen', false);

@@ -7,22 +7,22 @@ import { databaseService } from '@/src/services/databaseService';
 import { ModalBase } from './ModalBase';
 
 export function DeleteConfirmModal() {
-  const { modals, setModalState, deleteItem, deleteNote, items, notes, auth } = useStore();
+  const { modals, setModalState, deleteItem, deleteNote, items, notes } = useStore();
   const item = items.find(i => i.id === modals.currentItemId);
   const note = notes.find(n => n.id === modals.currentItemId);
   const target = item || note;
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleConfirmDelete = async () => {
-    if (!auth.user?.id || !target) return;
+    if (!target) return;
     setIsDeleting(true);
 
     try {
       if (item) {
-        await databaseService.deleteContent(auth.user.id, item.id);
+        await databaseService.deleteContent(item.id);
         deleteItem(item.id);
       } else if (note) {
-        await databaseService.deleteNote(auth.user.id, note.id);
+        await databaseService.deleteNote(note.id);
         deleteNote(note.id);
       }
       setModalState('deleteConfirmOpen', false);

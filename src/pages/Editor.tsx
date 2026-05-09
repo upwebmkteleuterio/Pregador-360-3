@@ -22,7 +22,7 @@ import { databaseService } from '../services/databaseService';
 export default function Editor() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { items, updateItem, setModalState, addVersion, modals, auth } = useStore();
+  const { items, updateItem, setModalState, addVersion, modals } = useStore();
   
   const item = items.find(i => i.id === id);
   const [editedTitle, setEditedTitle] = useState(item?.title || '');
@@ -79,15 +79,13 @@ export default function Editor() {
   }
 
   const handleSave = async () => {
-    if (!auth.user?.id || !id) return;
+    if (!id) return;
     
     setIsSaving(true);
     const finalContent = editorRef.current?.innerText || editedContent;
     
     try {
-      // 1. Persistir no Supabase primeiro
       const { data: newVersion, error } = await databaseService.saveContentVersion(
-        auth.user.id,
         id,
         editedTitle,
         finalContent,
@@ -96,7 +94,6 @@ export default function Editor() {
 
       if (error) throw error;
 
-      // 2. Atualizar estado local apenas após sucesso no banco
       if (newVersion) {
         addVersion(item.id, {
           title: editedTitle,
@@ -138,7 +135,6 @@ export default function Editor() {
 
   return (
     <div className="space-y-6 pb-20 relative animate-in fade-in duration-500">
-      {/* Toast Notifications */}
       <div className="fixed bottom-24 left-0 right-0 z-50 flex flex-col items-center gap-2 pointer-events-none px-4">
         <AnimatePresence>
           {showSaveSuccess && (
@@ -155,7 +151,6 @@ export default function Editor() {
         </AnimatePresence>
       </div>
 
-      {/* Exit Confirmation Modal */}
       <AnimatePresence>
         {showExitConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -257,7 +252,6 @@ export default function Editor() {
         </div>
       </div>
 
-      {/* Editor Surface */}
       <div className="min-h-[60vh] bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-[2.5rem] p-6 space-y-6">
         <div className="flex items-center gap-1 pb-4 border-b border-[var(--border-color)] px-2 overflow-x-auto no-scrollbar sticky top-[72px] bg-[var(--bg-main)]/95 z-20 py-4 -mx-6 rounded-t-[2.5rem] shadow-xl">
           <div className="flex items-center gap-1 bg-[var(--bg-card)]/50 p-1 rounded-xl border border-[var(--border-color)]/50 shrink-0">

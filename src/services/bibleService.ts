@@ -15,8 +15,8 @@ export async function consultBibleAi(query: string, userId: string): Promise<Bib
     throw new Error("Configuração da API não encontrada.");
   }
 
-  // 1. Verificação de crédito atômica
-  const creditRes = await databaseService.deductCredit(userId, `Pesquisa Bíblica: ${query.substring(0, 30)}...`);
+  // Verificação de crédito agora é feita internamente pelo banco usando a sessão do usuário
+  const creditRes = await databaseService.deductCredit(`Pesquisa Bíblica: ${query.substring(0, 30)}...`);
   
   if (!creditRes.success) {
     throw new Error("INSUFFICIENT_CREDITS");
@@ -54,7 +54,6 @@ export async function consultBibleAi(query: string, userId: string): Promise<Bib
 }
 
 function parseBibleAiResponse(content: string): Omit<BibleAiResult, 'remainingCredits'> {
-  // Divisão profissional entre Conteúdo de Exibição e Dados de Sistema
   const parts = content.split(':::SYSTEM_DATA:::');
   const displayContent = parts[0].trim();
   const systemData = parts.length > 1 ? parts[1] : '';
@@ -65,7 +64,6 @@ function parseBibleAiResponse(content: string): Omit<BibleAiResult, 'remainingCr
   const themes: string[] = [];
   const verses: string[] = [];
   
-  // Extraímos os dados apenas da parte técnica/sistema
   let match;
   while ((match = themeRegex.exec(systemData)) !== null) {
     themes.push(match[1].trim());
@@ -74,7 +72,6 @@ function parseBibleAiResponse(content: string): Omit<BibleAiResult, 'remainingCr
     verses.push(match[1].trim());
   }
 
-  // Fallback caso a IA coloque as tags no texto principal em vez de embaixo
   if (themes.length === 0 && verses.length === 0) {
     while ((match = themeRegex.exec(displayContent)) !== null) {
       themes.push(match[1].trim());
@@ -84,7 +81,6 @@ function parseBibleAiResponse(content: string): Omit<BibleAiResult, 'remainingCr
     }
   }
 
-  // Removemos tags residuais do conteúdo exibido para garantir limpeza absoluta
   const cleanDisplayContent = displayContent
     .replace(/\[T\].*?\[\/T\]/gi, '')
     .replace(/\[V\].*?\[\/V\]/gi, '')

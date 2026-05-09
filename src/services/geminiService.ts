@@ -19,8 +19,8 @@ export const generateAIContent = async (
 ) => {
   const model = "gemini-3-flash-preview";
 
-  // 1. Verificação e desconto de crédito ANTES da chamada pesada da IA
-  const creditRes = await databaseService.deductCredit(userId, `Geração de ${type}: ${topic.substring(0, 30)}...`);
+  // Verificação de crédito segura via servidor
+  const creditRes = await databaseService.deductCredit(`Geração de ${type}: ${topic.substring(0, 30)}...`);
   
   if (!creditRes.success) {
     throw new Error("INSUFFICIENT_CREDITS");

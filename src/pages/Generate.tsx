@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useStore, MessageTone, ItemType, ContentItem } from '@/src/store/useStore';
+import { useStore, MessageTone, ItemType } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
-import { Sparkles, Mic, FileText, Lightbulb, ChevronRight, Clock, List, Loader2, BookOpen, Heart, Flame, MessageSquareWarning, Wind, GraduationCap, Users, Church } from 'lucide-react';
+import { Sparkles, Mic, FileText, Lightbulb, Loader2, BookOpen, Heart, Flame, MessageSquareWarning, Wind, GraduationCap, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { generateAIContent } from '../services/geminiService';
@@ -36,8 +36,7 @@ export default function Generate() {
         auth.user.id
       );
 
-      // Persistir no Supabase
-      const contentId = await databaseService.saveNewContent(auth.user.id, {
+      const contentId = await databaseService.saveNewContent({
         type: generatorForm.type,
         title: data.title,
         topic: data.topic || generatorForm.topic,
@@ -46,12 +45,10 @@ export default function Generate() {
       });
 
       if (contentId) {
-        // Atualizar créditos no store local com o valor real retornado pela IA (que já descontou)
         if (data.remainingCredits !== undefined) {
           setSubscriptionState({ credits: data.remainingCredits });
         }
         
-        // Atualizar store local para feedback imediato
         addItem({
           id: contentId,
           type: generatorForm.type,
@@ -105,7 +102,6 @@ export default function Generate() {
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         />
-        {/* Toggle de Tipo */}
         {(['Sermão', 'Ilustração'] as ItemType[]).map((type) => (
           <button
             key={type}
@@ -133,7 +129,7 @@ export default function Generate() {
             value={generatorForm.topic}
             onChange={(e) => setGeneratorForm({ topic: e.target.value })}
             placeholder={generatorForm.type === 'Sermão' ? "Ex: João 3:16 ou 'Amor Incondicional'" : "Ex: 'O valor do tempo' ou 'Mãos de um pai'"}
-            className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-5 py-4 pl-12 focus:outline-none focus:border-yellow-500/50 transition-all group-hover:border-[var(--border-color)]"
+            className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl px-5 py-4 pl-12 focus:outline-none focus:border-yellow-500/50 transition-all group-hover:border-[var(--border-color)] text-[var(--text-primary)]"
           />
           <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-yellow-500 transition-colors" size={20} />
         </div>

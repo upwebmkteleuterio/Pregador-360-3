@@ -229,10 +229,10 @@ export const useStore = create<AppState>()(
       deleteTag: async (id) => {
         const state = get();
         const tagToDelete = state.tags.find(t => t.id === id);
-        if (!tagToDelete || !state.auth.user?.id) return;
+        if (!tagToDelete) return;
 
         const { databaseService } = await import('../services/databaseService');
-        const { error } = await databaseService.deleteTag(state.auth.user.id, id);
+        const { error } = await databaseService.deleteTag(id);
 
         if (error) return;
 

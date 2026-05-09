@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useStore, Note } from '@/src/store/useStore';
+import { useStore } from '@/src/store/useStore';
 import { ChevronLeft, Save, Link as LinkIcon, Trash2, Tag as TagIcon, Loader2 } from 'lucide-react';
 import { databaseService } from '../services/databaseService';
 
@@ -8,7 +8,7 @@ export default function NoteEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { notes, items, addNote, updateNote, deleteNote, setModalState, auth } = useStore();
+  const { notes, items, addNote, updateNote, deleteNote, setModalState } = useStore();
 
   const isNew = id === 'new';
   const existingNote = notes.find(n => n.id === id);
@@ -32,12 +32,11 @@ export default function NoteEditor() {
   }, [existingNote, isNew, location.state]);
 
   const handleSave = async () => {
-    if (!auth.user?.id) return;
     setIsSaving(true);
 
     try {
       if (isNew) {
-        const noteId = await databaseService.saveNote(auth.user.id, {
+        const noteId = await databaseService.saveNote({
           title,
           content,
           linkedItemId,
@@ -54,7 +53,7 @@ export default function NoteEditor() {
           });
         }
       } else if (existingNote) {
-        const { error } = await databaseService.updateNote(auth.user.id, existingNote.id, {
+        const { error } = await databaseService.updateNote(existingNote.id, {
           title,
           content,
           linkedItemId
@@ -74,10 +73,10 @@ export default function NoteEditor() {
   };
 
   const handleDelete = async () => {
-    if (!auth.user?.id || !existingNote) return;
+    if (!existingNote) return;
     if (confirm('Deseja excluir esta nota?')) {
       try {
-        const { error } = await databaseService.deleteNote(auth.user.id, existingNote.id);
+        const { error } = await databaseService.deleteNote(existingNote.id);
         if (!error) {
           deleteNote(existingNote.id);
           navigate('/notes');

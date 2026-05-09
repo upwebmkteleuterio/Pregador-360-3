@@ -1,16 +1,19 @@
 import { supabase } from '../integrations/supabase/client';
-import { ItemType, MessageTone, ContentItem, Note, ContentVersion, Plan } from "../store/useStore";
+import { ContentItem, Note, Plan } from "../store/useStore";
 
 /**
- * Database Service - Supabase Edition
+ * Database Service - Supabase Edition (Secure Refactor)
  */
 
 export const databaseService = {
   // --- PERFIL E CRÉDITOS ---
 
-  deductCredit: async (userId: string, description: string): Promise<{ success: boolean; remaining: number; error?: string }> => {
-    // Usamos a função RPC do Supabase que verifica e consome o crédito de forma atômica
-    const { data, error } = await supabase.rpc('consume_credit', { user_id_input: userId });
+  deductCredit: async (description: string): Promise<{ success: boolean; remaining: number; error?: string }> => {
+    // Pegamos o ID do usuário diretamente da sessão ativa do Supabase para segurança máxima
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, remaining: 0, error: "Usuário não autenticado" };
+
+    const { data, error } = await supabase.rpc('consume_credit', { user_id_input: user.id });
 
     if (error) {
       console.error("[databaseService] RPC Error:", error);
@@ -18,9 +21,8 @@ export const databaseService = {
     }
 
     if (data && data.success) {
-      // Registra o log apenas se o consumo foi bem sucedido
       await supabase.from('credits_log').insert({
-        user_id: userId,
+        user_id: user.id,
         description,
         amount_changed: -1
       });
@@ -35,12 +37,15 @@ export const databaseService = {
 
   // --- CONTEÚDOS ---
 
-  saveNewContent: async (userId: string, item: Partial<ContentItem>): Promise<string | null> => {
+  saveNewContent: async (item: Partial<ContentItem>): Promise<string | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     try {
       const { data: content, error: contentError } = await supabase
         .from('contents')
         .insert({
-          user_id: userId,
+          user_id: user.id,
           type: item.type,
           title: item.title,
           topic: item.topic,
@@ -69,8 +74,8 @@ export const databaseService = {
     }
   },
 
-  updateContent: async (userId: string, contentId: string, updates: Partial<ContentItem>) => {
-    // RLS garantirá que apenas o dono possa atualizar, mas mantemos o filtro por segurança
+  updateContent: async (contentId: string, updates: Partial<ContentItem>) => {
+    // RLS filtra automaticamente por user_id = auth.uid()
     return await supabase
       .from('contents')
       .update({
@@ -78,20 +83,19 @@ export const databaseService = {
         content: updates.content,
         updated_at: new Date().toISOString()
       })
-      .eq('id', contentId)
-      .eq('user_id', userId);
+      .eq('id', contentId);
   },
 
-  deleteContent: async (userId: string, contentId: string) => {
+  deleteContent: async (contentId: string) => {
+    // RLS filtra automaticamente por user_id = auth.uid()
     return await supabase
       .from('contents')
       .delete()
-      .eq('id', contentId)
-      .eq('user_id', userId);
+      .eq('id', contentId);
   },
 
-  saveContentVersion: async (userId: string, contentId: string, title: string, content: string, label: string = 'Manual') => {
-    await databaseService.updateContent(userId, contentId, { title, content });
+  saveContentVersion: async (contentId: string, title: string, content: string, label: string = 'Manual') => {
+    await databaseService.updateContent(contentId, { title, content });
     return await supabase
       .from('content_versions')
       .insert({ content_id: contentId, title, content, label })
@@ -99,7 +103,8 @@ export const databaseService = {
       .single();
   },
 
-  fetchContents: async (userId: string) => {
+  fetchContents: async () => {
+    // RLS garante que apenas conteúdos do usuário logado sejam retornados
     const { data, error } = await supabase
       .from('contents')
       .select(`
@@ -109,7 +114,6 @@ export const databaseService = {
           tags(*)
         )
       `)
-      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
     return { data, error };
@@ -117,11 +121,14 @@ export const databaseService = {
 
   // --- NOTAS ---
 
-  saveNote: async (userId: string, note: Partial<Note>): Promise<string | null> => {
+  saveNote: async (note: Partial<Note>): Promise<string | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     const { data, error } = await supabase
       .from('notes')
       .insert({
-        user_id: userId,
+        user_id: user.id,
         title: note.title,
         content: note.content,
         linked_content_id: note.linkedItemId
@@ -133,7 +140,7 @@ export const databaseService = {
     return data.id;
   },
 
-  updateNote: async (userId: string, noteId: string, updates: Partial<Note>) => {
+  updateNote: async (noteId: string, updates: Partial<Note>) => {
     return await supabase
       .from('notes')
       .update({
@@ -142,19 +149,17 @@ export const databaseService = {
         linked_content_id: updates.linkedItemId,
         updated_at: new Date().toISOString()
       })
-      .eq('id', noteId)
-      .eq('user_id', userId);
+      .eq('id', noteId);
   },
 
-  deleteNote: async (userId: string, noteId: string) => {
+  deleteNote: async (noteId: string) => {
     return await supabase
       .from('notes')
       .delete()
-      .eq('id', noteId)
-      .eq('user_id', userId);
+      .eq('id', noteId);
   },
 
-  fetchNotes: async (userId: string) => {
+  fetchNotes: async () => {
     const { data, error } = await supabase
       .from('notes')
       .select(`
@@ -163,7 +168,6 @@ export const databaseService = {
           tags(*)
         )
       `)
-      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
     return { data, error };
@@ -179,7 +183,6 @@ export const databaseService = {
   },
 
   savePlan: async (plan: Partial<Plan>) => {
-    // Sanitização rigorosa do preço para o banco
     const rawPrice = plan.price?.toString() || '0';
     const cleanPrice = rawPrice.includes(',') 
       ? rawPrice.replace(/\./g, '').replace(',', '.') 
@@ -220,47 +223,46 @@ export const databaseService = {
 
   // --- PAGAMENTOS ---
 
-  fetchPayments: async (userId: string) => {
+  fetchPayments: async () => {
     return await supabase
       .from('payments')
       .select('*')
-      .eq('user_id', userId)
       .order('created_at', { ascending: false });
   },
 
   // --- TAGS ---
 
-  fetchTags: async (userId: string) => {
+  fetchTags: async () => {
     const { data, error } = await supabase
       .from('tags')
-      .select('*')
-      .eq('user_id', userId);
+      .select('*');
     
     return { data, error };
   },
 
-  createTag: async (userId: string, name: string, color: string) => {
+  createTag: async (name: string, color: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
     return await supabase
       .from('tags')
-      .insert({ user_id: userId, name, color })
+      .insert({ user_id: user.id, name, color })
       .select()
       .single();
   },
 
-  updateTag: async (userId: string, tagId: string, updates: Partial<{ name: string, color: string }>) => {
+  updateTag: async (tagId: string, updates: Partial<{ name: string, color: string }>) => {
     return await supabase
       .from('tags')
       .update(updates)
-      .eq('id', tagId)
-      .eq('user_id', userId);
+      .eq('id', tagId);
   },
 
-  deleteTag: async (userId: string, tagId: string) => {
+  deleteTag: async (tagId: string) => {
     return await supabase
       .from('tags')
       .delete()
-      .eq('id', tagId)
-      .eq('user_id', userId);
+      .eq('id', tagId);
   },
 
   // --- RELACIONAMENTOS ---

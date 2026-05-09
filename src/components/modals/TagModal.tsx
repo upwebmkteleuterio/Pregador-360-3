@@ -8,7 +8,7 @@ import { ModalBase } from './ModalBase';
 import { databaseService } from '@/src/services/databaseService';
 
 export function TagModal() {
-  const { modals, setModalState, tags, toggleTag, items, notes, addTag, auth } = useStore();
+  const { modals, setModalState, tags, toggleTag, items, notes, addTag } = useStore();
   const [isCreating, setIsCreating] = useState(false);
   
   const item = items.find((i) => i.id === modals.currentItemId);
@@ -17,14 +17,13 @@ export function TagModal() {
 
   const handleCreateQuickTag = async () => {
     const name = prompt('Nome da nova tag:');
-    if (!name || !auth.user?.id) return;
+    if (!name) return;
 
     setIsCreating(true);
     try {
-      const { data, error } = await databaseService.createTag(auth.user.id, name, '#71717a');
+      const { data, error } = await databaseService.createTag(name, '#71717a');
       if (data && !error) {
         addTag(data);
-        // Opcional: Já vincular a tag recém criada ao item atual
         if (currentObject) {
           await toggleTag(currentObject.id, data.id);
         }
