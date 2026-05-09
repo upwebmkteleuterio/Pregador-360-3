@@ -28,7 +28,13 @@ export default function AdminPlans() {
   useEffect(() => {
     const refreshPlans = async () => {
       try {
-        const { data } = await databaseService.fetchPlans();
+        const { data, error } = await databaseService.fetchPlans();
+        
+        if (error) {
+          console.error("Erro de permissão ao buscar planos:", error.message);
+          return;
+        }
+
         if (data) {
           setPlans(data.map((p: any) => ({
             id: p.id,
@@ -63,7 +69,8 @@ export default function AdminPlans() {
       alert('Plano atualizado com sucesso!');
     } catch (err: any) {
       console.error("[AdminPlans] Save error:", err);
-      alert(`Erro ao salvar: ${err.message || 'Verifique as permissões'}`);
+      // Se o RLS barrar, o erro virá aqui
+      alert(`Erro de Permissão: Apenas administradores podem modificar planos no banco de dados.`);
     } finally {
       setLoadingId(null);
     }

@@ -36,32 +36,41 @@ export const databaseService = {
   // --- CONTEÚDOS ---
 
   saveNewContent: async (userId: string, item: Partial<ContentItem>): Promise<string | null> => {
-    const { data: content, error: contentError } = await supabase
-      .from('contents')
-      .insert({
-        user_id: userId,
-        type: item.type,
-        title: item.title,
-        topic: item.topic,
-        tone: item.tone,
-        content: item.content
-      })
-      .select()
-      .single();
+    try {
+      const { data: content, error: contentError } = await supabase
+        .from('contents')
+        .insert({
+          user_id: userId,
+          type: item.type,
+          title: item.title,
+          topic: item.topic,
+          tone: item.tone,
+          content: item.content
+        })
+        .select()
+        .single();
 
-    if (contentError || !content) return null;
+      if (contentError || !content) {
+        console.error("[databaseService] Error saving content:", contentError);
+        return null;
+      }
 
-    await supabase.from('content_versions').insert({
-      content_id: content.id,
-      title: content.title,
-      content: content.content,
-      label: 'IA'
-    });
+      await supabase.from('content_versions').insert({
+        content_id: content.id,
+        title: content.title,
+        content: content.content,
+        label: 'IA'
+      });
 
-    return content.id;
+      return content.id;
+    } catch (err) {
+      console.error("[databaseService] Unexpected error in saveNewContent:", err);
+      return null;
+    }
   },
 
   updateContent: async (userId: string, contentId: string, updates: Partial<ContentItem>) => {
+    // RLS garantirá que apenas o dono possa atualizar, mas mantemos o filtro por segurança
     return await supabase
       .from('contents')
       .update({

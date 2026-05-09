@@ -32,7 +32,10 @@ export default function AdminUsers() {
           plans ( name )
         `);
 
-      if (data && !error) {
+      if (error) {
+        console.error("Erro de permissão ou rede:", error.message);
+        setUsers([]);
+      } else if (data) {
         const formattedUsers: UserData[] = data.map((u: any) => ({
           id: u.id,
           displayName: u.full_name || 'Usuário Sem Nome',
@@ -48,21 +51,24 @@ export default function AdminUsers() {
     fetchUsers();
   }, []);
 
-  const filteredUsers = users.filter(u => 
-    u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredUsers = users.filter(u =>
+    u.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="space-y-8 pb-32">
       <div className="flex items-center gap-4">
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
         >
           <ChevronLeft size={20} />
         </button>
-        <h1 className="text-xl text-yellow-500 font-bold">Gerenciar Usuários</h1>
+        <div className="flex flex-col">
+          <h1 className="text-xl text-yellow-500 font-bold">Gerenciar Usuários</h1>
+          <p className="text-[10px] text-[var(--text-secondary)] font-medium uppercase tracking-tighter">Acesso Restrito ao Administrador</p>
+        </div>
       </div>
 
       <div className="relative group">
