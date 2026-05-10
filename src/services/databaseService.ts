@@ -9,7 +9,6 @@ export const databaseService = {
   // --- PERFIL E CRÉDITOS ---
 
   deductCredit: async (description: string): Promise<{ success: boolean; remaining: number; error?: string }> => {
-    // Pegamos o ID do usuário diretamente da sessão ativa do Supabase para segurança máxima
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, remaining: 0, error: "Usuário não autenticado" };
 
@@ -75,7 +74,6 @@ export const databaseService = {
   },
 
   updateContent: async (contentId: string, updates: Partial<ContentItem>) => {
-    // RLS filtra automaticamente por user_id = auth.uid()
     return await supabase
       .from('contents')
       .update({
@@ -87,7 +85,6 @@ export const databaseService = {
   },
 
   deleteContent: async (contentId: string) => {
-    // RLS filtra automaticamente por user_id = auth.uid()
     return await supabase
       .from('contents')
       .delete()
@@ -104,7 +101,6 @@ export const databaseService = {
   },
 
   fetchContents: async () => {
-    // RLS garante que apenas conteúdos do usuário logado sejam retornados
     const { data, error } = await supabase
       .from('contents')
       .select(`
@@ -173,7 +169,7 @@ export const databaseService = {
     return { data, error };
   },
 
-  // --- PLANOS (ADMIN) ---
+  // --- PLANOS (ADMIN - Secure via Edge Function) ---
 
   fetchPlans: async () => {
     return await supabase
@@ -188,7 +184,7 @@ export const databaseService = {
       ? rawPrice.replace(/\./g, '').replace(',', '.') 
       : rawPrice;
 
-    const payload = {
+    const planData = {
       name: plan.name,
       description: plan.description,
       price: parseFloat(cleanPrice) || 0,
@@ -200,25 +196,36 @@ export const databaseService = {
       kiwify_product_id: plan.kiwifyProductId
     };
 
-    if (plan.id) {
-      return await supabase
-        .from('plans')
-        .update(payload)
-        .eq('id', plan.id);
-    } else {
-      return await supabase
-        .from('plans')
-        .insert(payload)
-        .select()
-        .single();
+    const { data, error } = await supabase.functions.invoke('admin-manage-plans', {
+      body: { 
+        action: 'save', 
+        planData, 
+        planId: plan.id 
+      }
+    });
+
+    if (error) {
+      console.error("[databaseService] Edge Function Error:", error);
+      return { data: null, error };
     }
+    
+    return { data, error: null };
   },
 
   deletePlan: async (planId: string) => {
-    return await supabase
-      .from('plans')
-      .delete()
-      .eq('id', planId);
+    const { data, error } = await supabase.functions.invoke('admin-manage-plans', {
+      body: { 
+        action: 'delete', 
+        planId 
+      }
+    });
+
+    if (error) {
+      console.error("[databaseService] Edge Function Delete Error:", error);
+      return { data: null, error };
+    }
+    
+    return { data, error: null };
   },
 
   // --- PAGAMENTOS ---
