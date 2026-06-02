@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
@@ -7,13 +7,17 @@ import {
   Pencil, 
   Volume2, 
   History, 
+  Copy,
+  Check
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function ContentView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { items, setModalState } = useStore();
   const item = items.find(i => i.id === id);
+  const [copied, setCopied] = useState(false);
 
   if (!item) {
     return (
@@ -25,6 +29,13 @@ export default function ContentView() {
       </div>
     );
   }
+
+  const handleCopy = () => {
+    const textToCopy = `${item.title}\n\n${item.topic}\n\n${item.content}`;
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const formatContent = (content: string) => {
     const cleanContent = content
@@ -283,7 +294,22 @@ export default function ContentView() {
   }, [item]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {copied && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-32 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3"
+          >
+            <Check size={18} />
+            <span className="font-bold text-xs uppercase tracking-widest">Conteúdo copiado</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex justify-between items-start">
         <button 
           onClick={() => navigate('/library')}
@@ -370,7 +396,16 @@ export default function ContentView() {
             {item.type}
           </span>
         </div>
-        <h1 className="text-3xl font-bold leading-tight text-yellow-500">{item.title}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-3xl font-bold leading-tight text-yellow-500 flex-1">{item.title}</h1>
+          <button 
+            onClick={handleCopy}
+            className="mt-1 p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all active:scale-90 rounded-xl"
+            title="Copiar Texto"
+          >
+            <Copy size={20} />
+          </button>
+        </div>
         <p className="mt-2 text-[var(--text-secondary)] text-sm">{item.topic}</p>
       </div>
 
