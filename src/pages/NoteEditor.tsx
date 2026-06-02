@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/src/store/useStore';
-import { ChevronLeft, Save, Link as LinkIcon, Trash2, Tag as TagIcon, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { ChevronLeft, Save, Link as LinkIcon, Trash2, Tag as TagIcon, Loader2, Copy } from 'lucide-react';
 import { databaseService } from '../services/databaseService';
 
 export default function NoteEditor() {
@@ -72,6 +73,12 @@ export default function NoteEditor() {
     }
   };
 
+  const handleCopy = () => {
+    const fullText = `${title}\n\n${content}`;
+    navigator.clipboard.writeText(fullText);
+    toast.success('Conteúdo copiado');
+  };
+
   const handleDelete = async () => {
     if (!existingNote) return;
     if (confirm('Deseja excluir esta nota?')) {
@@ -119,13 +126,24 @@ export default function NoteEditor() {
             onAddTag={() => setModalState('tagModalOpen', true, id)} 
           />
 
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Título da Nota"
-            className="w-full bg-transparent border-none text-3xl font-bold text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30 outline-none"
-          />
+          <div className="flex items-center gap-4 group">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Título da Nota"
+              className="flex-1 bg-transparent border-none text-3xl font-bold text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30 outline-none"
+            />
+            {!isNew && (
+              <button 
+                onClick={handleCopy}
+                className="p-2 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                title="Copiar conteúdo"
+              >
+                <Copy size={24} />
+              </button>
+            )}
+          </div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}

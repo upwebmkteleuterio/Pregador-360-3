@@ -2,11 +2,13 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
+import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
   Pencil, 
   Volume2, 
-  History, 
+  History,
+  Copy
 } from 'lucide-react';
 
 export default function ContentView() {
@@ -25,6 +27,12 @@ export default function ContentView() {
       </div>
     );
   }
+
+  const handleCopy = () => {
+    const fullText = `${item.title}\n\n${item.topic}\n\n${item.content}`;
+    navigator.clipboard.writeText(fullText);
+    toast.success('Conteúdo copiado');
+  };
 
   const formatContent = (content: string) => {
     const cleanContent = content
@@ -370,7 +378,16 @@ export default function ContentView() {
             {item.type}
           </span>
         </div>
-        <h1 className="text-3xl font-bold leading-tight text-yellow-500">{item.title}</h1>
+        <div className="flex items-center gap-4 group">
+          <h1 className="text-3xl font-bold leading-tight text-yellow-500">{item.title}</h1>
+          <button 
+            onClick={handleCopy}
+            className="p-2 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+            title="Copiar conteúdo"
+          >
+            <Copy size={24} />
+          </button>
+        </div>
         <p className="mt-2 text-[var(--text-secondary)] text-sm">{item.topic}</p>
       </div>
 
