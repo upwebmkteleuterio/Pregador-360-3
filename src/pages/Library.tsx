@@ -55,6 +55,7 @@ export default function Library() {
   };
 
   // 1. Filtragem primária (Busca + Tipo de Item)
+  // Este é o conjunto de dados base sobre o qual as tags serão extraídas
   const baseItems = useMemo(() => {
     if (!items) return [];
     return items.filter(item => {
@@ -69,18 +70,34 @@ export default function Library() {
     });
   }, [items, library.searchQuery, library.filter]);
 
-  // 2. Filtro de Tags Baseado no Cadastro do Sistema
-  // Agora usamos a lista 'allTags' diretamente para o menu de filtros
+  // 2. Extração Dinâmica de Tags Vinculadas
+  // Mostra apenas as tags que existem nos itens visíveis (baseItems)
   const availableTags = useMemo(() => {
-    if (!allTags) return [];
-    return [...allTags].sort((a, b) => a.name.localeCompare(b.name));
-  }, [allTags]);
+    const tagNamesFound = new Set<string>();
+    
+    baseItems.forEach(item => {
+      if (item.tags && Array.isArray(item.tags)) {
+        item.tags.forEach(t => {
+          if (t) tagNamesFound.add(t.trim());
+        });
+      }
+    });
+
+    // Mapeia os nomes encontrados para as configurações de cores do sistema
+    return Array.from(tagNamesFound).map(name => {
+      const config = allTags.find(t => t.name.toLowerCase().trim() === name.toLowerCase().trim());
+      return {
+        name: name,
+        color: config?.color || '#71717a',
+        id: config?.id || `temp-${name}`
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [baseItems, allTags]);
 
   // 3. Filtragem final (pela Tag selecionada)
   const filteredItems = useMemo(() => {
     if (!library.selectedTag) return baseItems;
     
-    // Comparamos o nome da tag selecionada com as tags do item (normalizando ambas)
     const selected = library.selectedTag.toLowerCase().trim();
     return baseItems.filter(item => {
       if (!item.tags || !Array.isArray(item.tags)) return false;
@@ -132,7 +149,7 @@ export default function Library() {
           ))}
         </div>
 
-        {/* Filtro de Tags Horizontal baseado nas tags do sistema */}
+        {/* Filtro de Tags Horizontal Dinâmico */}
         <div className="relative">
           <div 
             ref={scrollRef}
@@ -155,7 +172,7 @@ export default function Library() {
             </button>
             
             {availableTags.map((tag) => {
-              const isActive = library.selectedTag === tag.name;
+              const isActive = library.selectedTag?.toLowerCase().trim() === tag.name.toLowerCase().trim();
               return (
                 <button
                   key={tag.id}
