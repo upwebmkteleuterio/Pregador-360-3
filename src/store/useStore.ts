@@ -84,7 +84,7 @@ interface AppState {
   library: { searchQuery: string; filter: 'Todos' | ItemType; selectedTag: string | null; };
   tags: Tag[];
   notes: Note[];
-  notesLibrary: { searchQuery: string; };
+  notesLibrary: { searchQuery: string; selectedTag: string | null; };
   preachingMode: { fontSize: number; scrollSpeed: number; };
   auth: {
     isAuthenticated: boolean;
@@ -156,7 +156,7 @@ export const useStore = create<AppState>()(
       library: { searchQuery: '', filter: 'Todos', selectedTag: null },
       tags: [],
       notes: [],
-      notesLibrary: { searchQuery: '' },
+      notesLibrary: { searchQuery: '', selectedTag: null },
       preachingMode: { fontSize: 32, scrollSpeed: 1 },
       auth: { isAuthenticated: false, user: null },
       subscription: { planId: null, planName: 'Carregando...', planType: 'free', status: 'inactive', nextRenewalDate: 'N/A', credits: 0, totalCredits: 30 },
