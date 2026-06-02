@@ -209,7 +209,7 @@ export default function BibleSearch() {
   );
 }
 
-function ThemeCard({ theme, onClick }: { theme: string; onClick: () => void }) {
+function ThemeCard({ theme, onClick }: { theme: string; onClick: () => void; key?: React.Key }) {
   return (
     <button 
       onClick={onClick}
@@ -226,7 +226,7 @@ function ThemeCard({ theme, onClick }: { theme: string; onClick: () => void }) {
   );
 }
 
-function VerseCard({ verse, onClick }: { verse: string; onClick: () => void }) {
+function VerseCard({ verse, onClick }: { verse: string; onClick: () => void; key?: React.Key }) {
   return (
     <button 
       onClick={onClick}
