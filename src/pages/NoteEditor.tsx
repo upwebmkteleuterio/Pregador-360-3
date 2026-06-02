@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/src/store/useStore';
 import { ChevronLeft, Save, Link as LinkIcon, Trash2, Tag as TagIcon, Loader2, Copy, Check } from 'lucide-react';
@@ -20,6 +20,8 @@ export default function NoteEditor() {
   const [noteTags, setNoteTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  
+  const titleRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (existingNote) {
@@ -32,6 +34,14 @@ export default function NoteEditor() {
       if (location.state.content) setContent(location.state.content);
     }
   }, [existingNote, isNew, location.state]);
+
+  // Ajusta a altura do título automaticamente
+  useEffect(() => {
+    if (titleRef.current) {
+      titleRef.current.style.height = 'auto';
+      titleRef.current.style.height = titleRef.current.scrollHeight + 'px';
+    }
+  }, [title]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -96,12 +106,10 @@ export default function NoteEditor() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // O botão de copiar aparece se houver título ou conteúdo
   const hasContent = title.trim().length > 0 || content.trim().length > 0;
 
   return (
     <div className="space-y-8 pb-32 relative">
-      {/* Toast Notification */}
       <AnimatePresence>
         {copied && (
           <motion.div
@@ -146,18 +154,19 @@ export default function NoteEditor() {
             onAddTag={() => setModalState('tagModalOpen', true, id)} 
           />
 
-          <div className="flex items-center gap-4">
-            <input
-              type="text"
+          <div className="flex items-start gap-4">
+            <textarea
+              ref={titleRef}
+              rows={1}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Título da Nota"
-              className="flex-1 bg-transparent border-none text-3xl font-bold text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30 outline-none"
+              className="flex-1 bg-transparent border-none text-2xl md:text-3xl font-bold text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30 outline-none resize-none overflow-hidden"
             />
             {hasContent && (
               <button 
                 onClick={handleCopy}
-                className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all active:scale-90 rounded-xl shrink-0"
+                className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all active:scale-90 rounded-xl shrink-0 mt-1"
                 title="Copiar Texto"
               >
                 <Copy size={20} />
