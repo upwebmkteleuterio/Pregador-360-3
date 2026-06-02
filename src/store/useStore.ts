@@ -81,7 +81,7 @@ interface AppState {
     currentTagId: string | null;
     restoredContent: { title: string; content: string } | null;
   };
-  library: { searchQuery: string; filter: 'Todos' | ItemType; };
+  library: { searchQuery: string; filter: 'Todos' | ItemType; selectedTag: string | null; };
   tags: Tag[];
   notes: Note[];
   notesLibrary: { searchQuery: string; };
@@ -153,7 +153,7 @@ export const useStore = create<AppState>()(
         deleteConfirmOpen: false, deleteTagConfirmOpen: false, createEditTagModalOpen: false, aiCreditsOpen: false,
         audioPlayerOpen: false, currentItemId: null, currentTagId: null, restoredContent: null,
       },
-      library: { searchQuery: '', filter: 'Todos' },
+      library: { searchQuery: '', filter: 'Todos', selectedTag: null },
       tags: [],
       notes: [],
       notesLibrary: { searchQuery: '' },

@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
-import { Search, Plus, Tag, Trash2, Copy, ChevronRight } from 'lucide-react';
+import { Search, Plus, Tag as TagIcon, Trash2, Copy, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Library() {
@@ -12,22 +12,44 @@ export default function Library() {
     setLibraryState, 
     setModalState, 
     duplicateItem, 
-    tags 
+    tags: allTags 
   } = useStore();
 
   // Limpa a busca ao sair da tela (unmount)
   useEffect(() => {
     return () => {
-      setLibraryState({ searchQuery: '' });
+      setLibraryState({ searchQuery: '', selectedTag: null });
     };
   }, [setLibraryState]);
 
-  const filteredItems = items.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(library.searchQuery.toLowerCase()) ||
-                        item.topic.toLowerCase().includes(library.searchQuery.toLowerCase());
-    const matchesFilter = library.filter === 'Todos' || item.type === library.filter;
-    return matchesSearch && matchesFilter;
-  });
+  // Filtra itens baseados em busca e tipo (Sermão/Ilustração)
+  const itemsInCurrentCategory = useMemo(() => {
+    return items.filter(item => {
+      const matchesSearch = item.title.toLowerCase().includes(library.searchQuery.toLowerCase()) ||
+                          item.topic.toLowerCase().includes(library.searchQuery.toLowerCase());
+      const matchesFilter = library.filter === 'Todos' || item.type === library.filter;
+      return matchesSearch && matchesFilter;
+    });
+  }, [items, library.searchQuery, library.filter]);
+
+  // Extrai dinamicamente as tags disponíveis na categoria/busca atual
+  const availableTags = useMemo(() => {
+    const uniqueTagNames = new Set<string>();
+    itemsInCurrentCategory.forEach(item => {
+      item.tags.forEach(t => uniqueTagNames.add(t));
+    });
+    
+    // Mapeia os nomes para os objetos de tag completos para obter as cores
+    return Array.from(uniqueTagNames).map(tagName => {
+      return allTags.find(t => t.name === tagName) || { id: tagName, name: tagName, color: '#71717a' };
+    });
+  }, [itemsInCurrentCategory, allTags]);
+
+  // Aplica o filtro de tag selecionada
+  const filteredItems = useMemo(() => {
+    if (!library.selectedTag) return itemsInCurrentCategory;
+    return itemsInCurrentCategory.filter(item => item.tags.includes(library.selectedTag!));
+  }, [itemsInCurrentCategory, library.selectedTag]);
 
   return (
     <div className="space-y-8 pb-32">
@@ -47,7 +69,7 @@ export default function Library() {
         <input
           type="text"
           value={library.searchQuery}
-          onChange={(e) => setLibraryState({ searchQuery: e.target.value })}
+          onChange={(e) => setLibraryState({ searchQuery: e.target.value, selectedTag: null })}
           placeholder="Buscar sermões, notas, ilustrações..."
           className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl px-5 py-4 pl-12 focus:outline-none focus:border-yellow-500/50 transition-all group-hover:border-[var(--border-color)] text-[var(--text-primary)]"
         />
@@ -58,15 +80,45 @@ export default function Library() {
         {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
           <button
             key={filter}
-            onClick={() => setLibraryState({ filter })}
+            onClick={() => setLibraryState({ filter, selectedTag: null })}
             className={cn(
               "flex-1 py-2 rounded-lg text-sm font-medium transition-all",
               library.filter === filter 
-                ? "bg-[var(--border-color)] text-[var(--text-primary)] shadow-lg" 
+                ? "bg-[var(--bg-main)] text-[var(--text-primary)] shadow-lg" 
                 : "text-[var(--text-secondary)] hover:text-yellow-500"
             )}
           >
             {filter === 'Todos' ? 'Todos' : filter === 'Sermão' ? 'Sermões' : 'Ilustrações'}
+          </button>
+        ))}
+      </div>
+
+      {/* Filtro de Tags Horizontal */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 -mx-2 px-2">
+        <button
+          onClick={() => setLibraryState({ selectedTag: null })}
+          className={cn(
+            "flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
+            !library.selectedTag 
+              ? "bg-yellow-500 text-zinc-950 border-yellow-500" 
+              : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)]"
+          )}
+        >
+          Todas as Tags
+        </button>
+        {availableTags.map((tag) => (
+          <button
+            key={tag.id}
+            onClick={() => setLibraryState({ selectedTag: tag.name })}
+            className={cn(
+              "flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
+              library.selectedTag === tag.name 
+                ? "bg-yellow-500 text-zinc-950 border-yellow-500" 
+                : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)]"
+            )}
+          >
+            <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+            {tag.name}
           </button>
         ))}
       </div>
@@ -101,13 +153,13 @@ export default function Library() {
 
               <div className="flex flex-wrap gap-2">
                 {item.tags.map(tagName => {
-                  const tagConfig = tags.find(t => t.name === tagName);
+                  const tagConfig = allTags.find(t => t.name === tagName);
                   return (
                     <div 
                       key={tagName}
                       className="flex items-center gap-1.5 px-3 py-1 bg-[var(--border-color)] rounded-full text-[10px] font-bold text-[var(--text-secondary)]"
                     >
-                      <Tag size={10} style={{ color: tagConfig?.color || '#71717a' }} />
+                      <TagIcon size={10} style={{ color: tagConfig?.color || '#71717a' }} />
                       {tagName}
                     </div>
                   );
@@ -134,7 +186,7 @@ export default function Library() {
                     onClick={() => setModalState('tagModalOpen', true, item.id)}
                     className="p-2 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
                   >
-                    <Tag size={18} />
+                    <TagIcon size={18} />
                   </button>
                 </div>
                 
@@ -167,6 +219,13 @@ export default function Library() {
       <style>{`
         .shadow-glow {
           box-shadow: 0 0 20px rgba(234, 179, 8, 0.1);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
     </div>
