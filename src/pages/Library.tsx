@@ -15,21 +15,20 @@ export default function Library() {
     tags: allTags 
   } = useStore();
 
-  // Limpa a busca e filtros ao sair da tela (unmount)
+  // Limpa filtros específicos ao sair da tela
   useEffect(() => {
     return () => {
       setLibraryState({ searchQuery: '', selectedTag: null });
     };
   }, [setLibraryState]);
 
-  // 1. Filtra itens baseados em busca e tipo (Sermão/Ilustração)
-  // Estes itens servirão de base para as tags que aparecerão no filtro
-  const itemsInCurrentCategory = useMemo(() => {
+  // 1. Filtragem primária: Busca textual e Categoria (Sermão/Ilustração)
+  const itemsInCurrentContext = useMemo(() => {
     return items.filter(item => {
       const searchLower = library.searchQuery.toLowerCase();
       const matchesSearch = !library.searchQuery || 
-                          item.title.toLowerCase().includes(searchLower) ||
-                          item.topic.toLowerCase().includes(searchLower);
+                          (item.title && item.title.toLowerCase().includes(searchLower)) ||
+                          (item.topic && item.topic.toLowerCase().includes(searchLower));
       
       const matchesFilter = library.filter === 'Todos' || item.type === library.filter;
       
@@ -37,45 +36,50 @@ export default function Library() {
     });
   }, [items, library.searchQuery, library.filter]);
 
-  // 2. Extrai dinamicamente as tags disponíveis apenas dos itens que passaram no filtro acima
-  const availableTags = useMemo(() => {
-    const uniqueTagNames = new Set<string>();
+  // 2. Extração dinâmica de Tags baseada nos itens filtrados acima
+  const dynamicTags = useMemo(() => {
+    const tagNames = new Set<string>();
     
-    itemsInCurrentCategory.forEach(item => {
+    itemsInCurrentContext.forEach(item => {
       if (item.tags && Array.isArray(item.tags)) {
-        item.tags.forEach(t => {
-          if (t && typeof t === 'string') {
-            uniqueTagNames.add(t);
+        item.tags.forEach(tagName => {
+          if (tagName && typeof tagName === 'string') {
+            tagNames.add(tagName);
           }
         });
       }
     });
     
-    // Mapeia os nomes para os objetos de tag completos (para obter as cores) e ordena alfabeticamente
-    return Array.from(uniqueTagNames)
-      .map(tagName => {
-        return allTags.find(t => t.name === tagName) || { id: tagName, name: tagName, color: '#71717a' };
+    // Converte os nomes únicos em objetos de tag (usando a cor configurada se existir)
+    return Array.from(tagNames)
+      .map(name => {
+        const tagConfig = allTags.find(t => t.name.toLowerCase() === name.toLowerCase());
+        return {
+          id: tagConfig?.id || name,
+          name: name,
+          color: tagConfig?.color || '#71717a'
+        };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [itemsInCurrentCategory, allTags]);
+  }, [itemsInCurrentContext, allTags]);
 
-  // 3. Aplica o filtro final de tag selecionada para a lista de itens
+  // 3. Filtragem final: Itens que possuem a Tag selecionada (se houver)
   const filteredItems = useMemo(() => {
-    if (!library.selectedTag) return itemsInCurrentCategory;
-    return itemsInCurrentCategory.filter(item => 
+    if (!library.selectedTag) return itemsInCurrentContext;
+    return itemsInCurrentContext.filter(item => 
       item.tags && item.tags.includes(library.selectedTag!)
     );
-  }, [itemsInCurrentCategory, library.selectedTag]);
+  }, [itemsInCurrentContext, library.selectedTag]);
 
   return (
     <div className="space-y-8 pb-32 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+        <h1 className="text-4xl font-bold text-[var(--text-primary)]">
           Biblioteca
         </h1>
         <button 
           onClick={() => navigate('/')}
-          className="p-3 bg-yellow-500 text-zinc-950 rounded-2xl shadow-lg shadow-yellow-500/20 active:scale-[0.98] transition-transform"
+          className="p-3 bg-yellow-500 text-zinc-950 rounded-2xl shadow-lg shadow-yellow-500/20 active:scale-[0.98] transition-all"
         >
           <Plus size={24} />
         </button>
@@ -92,6 +96,7 @@ export default function Library() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-yellow-500 transition-colors" size={20} />
       </div>
 
+      {/* Abas Principais: Todos, Sermão, Ilustração */}
       <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50">
         {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
           <button
@@ -109,8 +114,8 @@ export default function Library() {
         ))}
       </div>
 
-      {/* Filtro de Tags Horizontal - Extraído dinamicamente da lista abaixo */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2 scroll-smooth">
+      {/* Filtro de Tags Dinâmico (Horizontal Scroll) */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2">
         <button
           onClick={() => setLibraryState({ selectedTag: null })}
           className={cn(
@@ -122,7 +127,8 @@ export default function Library() {
         >
           Todas as Tags
         </button>
-        {availableTags.map((tag) => (
+        
+        {dynamicTags.map((tag) => (
           <button
             key={tag.id}
             onClick={() => setLibraryState({ selectedTag: tag.name })}
@@ -139,12 +145,13 @@ export default function Library() {
         ))}
       </div>
 
+      {/* Lista de Conteúdo */}
       <div className="space-y-4">
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => (
             <div 
               key={item.id}
-              className="bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-[2rem] p-6 space-y-5 relative overflow-hidden group hover:bg-[var(--bg-card)]/80 hover:border-yellow-500/20 transition-all active:scale-[0.99] cursor-default"
+              className="bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-[2rem] p-6 space-y-5 relative overflow-hidden group hover:bg-[var(--bg-card)]/80 hover:border-yellow-500/20 transition-all active:scale-[0.99]"
             >
               <div 
                 className="absolute left-0 top-0 bottom-0 w-1.5 transition-colors" 
@@ -157,19 +164,20 @@ export default function Library() {
                     <span className="text-[9px] font-bold tracking-[0.15em] text-[var(--text-secondary)] uppercase px-2 py-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg">
                       {item.type}
                     </span>
-                    <span className="text-[10px] font-medium text-[var(--text-secondary)] opacity-60">
+                    <span className="text-[10px] font-medium text-[var(--text-secondary)]">
                       • {new Date(item.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-[var(--text-primary)] leading-tight group-hover:text-yellow-500 transition-colors">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-[var(--text-secondary)] line-clamp-1 opacity-70">
+                  <p className="text-xs text-[var(--text-secondary)] line-clamp-1 opacity-70 italic">
                     {item.topic}
                   </p>
                 </div>
               </div>
 
+              {/* Tags do Item Card */}
               {item.tags && item.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {item.tags.map(tagName => {
@@ -195,7 +203,6 @@ export default function Library() {
                       setModalState('deleteConfirmOpen', true, item.id);
                     }}
                     className="p-2.5 text-[var(--text-secondary)] hover:text-red-500 transition-colors"
-                    title="Excluir"
                   >
                     <Trash2 size={20} />
                   </button>
@@ -205,7 +212,6 @@ export default function Library() {
                       duplicateItem(item.id);
                     }}
                     className="p-2.5 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
-                    title="Duplicar"
                   >
                     <Copy size={20} />
                   </button>
@@ -215,7 +221,6 @@ export default function Library() {
                       setModalState('tagModalOpen', true, item.id);
                     }}
                     className="p-2.5 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
-                    title="Gerenciar Tags"
                   >
                     <TagIcon size={20} />
                   </button>
@@ -236,19 +241,7 @@ export default function Library() {
             <div className="h-20 w-20 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full flex items-center justify-center mx-auto text-[var(--text-secondary)] opacity-40">
               <Search size={40} />
             </div>
-            <div className="space-y-2">
-              <p className="text-[var(--text-primary)] font-bold">Nenhum item encontrado</p>
-              <p className="text-[var(--text-secondary)] text-sm px-10">Tente ajustar seus filtros ou busca para encontrar o que procura.</p>
-            </div>
-            <button 
-              onClick={() => {
-                setLibraryState({ searchQuery: '', selectedTag: null });
-                navigate('/');
-              }}
-              className="text-yellow-500 font-bold text-xs uppercase tracking-widest hover:underline"
-            >
-              Criar Novo Conteúdo
-            </button>
+            <p className="text-[var(--text-secondary)] text-sm px-10">Nenhum item encontrado nos seus arquivos.</p>
           </div>
         )}
       </div>
