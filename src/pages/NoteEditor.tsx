@@ -96,6 +96,9 @@ export default function NoteEditor() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // O botão de copiar aparece se houver título ou conteúdo
+  const hasContent = title.trim().length > 0 || content.trim().length > 0;
+
   return (
     <div className="space-y-8 pb-32 relative">
       {/* Toast Notification */}
@@ -151,7 +154,7 @@ export default function NoteEditor() {
               placeholder="Título da Nota"
               className="flex-1 bg-transparent border-none text-3xl font-bold text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30 outline-none"
             />
-            {!isNew && (
+            {hasContent && (
               <button 
                 onClick={handleCopy}
                 className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all active:scale-90 rounded-xl shrink-0"
