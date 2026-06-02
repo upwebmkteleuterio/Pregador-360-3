@@ -69,35 +69,18 @@ export default function Library() {
     });
   }, [items, library.searchQuery, library.filter]);
 
-  // 2. Extração de Tags Dinâmicas
-  // Extraímos apenas as tags dos itens que estão na tela (baseItems)
+  // 2. Filtro de Tags Baseado no Cadastro do Sistema
+  // Agora usamos a lista 'allTags' diretamente para o menu de filtros
   const availableTags = useMemo(() => {
-    const tagNames = new Set<string>();
-    
-    // Coletamos os nomes brutos
-    baseItems.forEach(item => {
-      if (item.tags && Array.isArray(item.tags)) {
-        item.tags.forEach(t => {
-          if (t && typeof t === 'string') tagNames.add(t.trim());
-        });
-      }
-    });
-    
-    // Mapeamos para o formato visual, buscando a cor no estado global se existir
-    return Array.from(tagNames).map(name => {
-      const config = allTags.find(t => t.name.toLowerCase().trim() === name.toLowerCase().trim());
-      return {
-        name: name,
-        color: config?.color || '#71717a', // Fallback para cinza se não houver config
-        id: config?.id || `temp-${name}`
-      };
-    }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [baseItems, allTags]);
+    if (!allTags) return [];
+    return [...allTags].sort((a, b) => a.name.localeCompare(b.name));
+  }, [allTags]);
 
   // 3. Filtragem final (pela Tag selecionada)
   const filteredItems = useMemo(() => {
     if (!library.selectedTag) return baseItems;
     
+    // Comparamos o nome da tag selecionada com as tags do item (normalizando ambas)
     const selected = library.selectedTag.toLowerCase().trim();
     return baseItems.filter(item => {
       if (!item.tags || !Array.isArray(item.tags)) return false;
@@ -149,7 +132,7 @@ export default function Library() {
           ))}
         </div>
 
-        {/* Filtro de Tags Horizontal Dinâmico */}
+        {/* Filtro de Tags Horizontal baseado nas tags do sistema */}
         <div className="relative">
           <div 
             ref={scrollRef}
@@ -172,7 +155,7 @@ export default function Library() {
             </button>
             
             {availableTags.map((tag) => {
-              const isActive = library.selectedTag?.toLowerCase().trim() === tag.name.toLowerCase().trim();
+              const isActive = library.selectedTag === tag.name;
               return (
                 <button
                   key={tag.id}
