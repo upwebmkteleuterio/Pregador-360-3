@@ -50,11 +50,11 @@ export default function Library() {
     if (!isDown.current || !scrollRef.current) return;
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX.current) * 2; // Velocidade do scroll
+    const walk = (x - startX.current) * 2;
     scrollRef.current.scrollLeft = scrollLeft.current - walk;
   };
 
-  // 1. Filtragem primária por busca e categoria (Sermão/Ilustração)
+  // 1. Filtragem primária (Busca + Tipo de Item)
   const baseItems = useMemo(() => {
     return items.filter(item => {
       const searchLower = library.searchQuery.toLowerCase();
@@ -68,18 +68,32 @@ export default function Library() {
     });
   }, [items, library.searchQuery, library.filter]);
 
-  // 2. Filtragem final pela tag selecionada
+  // 2. Extração de Tags Dinâmicas (Apenas as que aparecem nos itens atuais)
+  const availableTags = useMemo(() => {
+    const tagNames = new Set<string>();
+    baseItems.forEach(item => {
+      if (item.tags) {
+        item.tags.forEach(t => tagNames.add(t));
+      }
+    });
+    
+    return Array.from(tagNames).map(name => {
+      const config = allTags.find(t => t.name === name);
+      return {
+        name,
+        color: config?.color || '#71717a',
+        id: config?.id || name
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [baseItems, allTags]);
+
+  // 3. Filtragem final pela tag selecionada
   const filteredItems = useMemo(() => {
     if (!library.selectedTag) return baseItems;
     return baseItems.filter(item => 
-      item.tags && item.tags.includes(library.selectedTag!)
+      item.tags && item.tags.some(t => t.trim() === library.selectedTag?.trim())
     );
   }, [baseItems, library.selectedTag]);
-
-  // Ordenação das tags cadastradas para o filtro horizontal
-  const sortedTags = useMemo(() => {
-    return [...allTags].sort((a, b) => a.name.localeCompare(b.name));
-  }, [allTags]);
 
   return (
     <div className="space-y-8 pb-32 animate-in fade-in duration-500">
@@ -107,7 +121,7 @@ export default function Library() {
       </div>
 
       <div className="space-y-6">
-        {/* 1. Abas de Categorias - Estilo Pílula */}
+        {/* 1. Abas de Categorias */}
         <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50 max-w-md">
           {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
             <button
@@ -125,7 +139,7 @@ export default function Library() {
           ))}
         </div>
 
-        {/* 2. Filtro de Tags Horizontal com Drag to Scroll */}
+        {/* 2. Filtro de Tags Horizontal Dinâmico */}
         <div className="relative">
           <div 
             ref={scrollRef}
@@ -147,7 +161,7 @@ export default function Library() {
               Todas as Tags
             </button>
             
-            {sortedTags.map((tag) => (
+            {availableTags.map((tag) => (
               <button
                 key={tag.id}
                 onClick={() => setLibraryState({ selectedTag: tag.name })}
@@ -178,7 +192,8 @@ export default function Library() {
           filteredItems.map((item) => (
             <div 
               key={item.id}
-              className="bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-[2rem] p-6 space-y-5 relative overflow-hidden group hover:bg-[var(--bg-card)]/80 hover:border-yellow-500/20 transition-all active:scale-[0.99]"
+              onClick={() => navigate(`/view/${item.id}`)}
+              className="bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-[2rem] p-6 space-y-5 relative overflow-hidden group hover:bg-[var(--bg-card)]/80 hover:border-yellow-500/20 transition-all active:scale-[0.99] cursor-pointer"
             >
               <div 
                 className="absolute left-0 top-0 bottom-0 w-1.5 transition-colors" 
@@ -252,20 +267,17 @@ export default function Library() {
                   </button>
                 </div>
                 
-                <button 
-                  onClick={() => navigate(`/view/${item.id}`)}
-                  className="flex items-center gap-3 px-8 py-3.5 bg-yellow-500 text-zinc-950 font-bold text-xs uppercase tracking-widest rounded-2xl hover:bg-yellow-400 active:scale-95 transition-all shadow-lg shadow-yellow-500/10"
-                >
+                <div className="flex items-center gap-3 px-8 py-3.5 bg-yellow-500 text-zinc-950 font-bold text-xs uppercase tracking-widest rounded-2xl group-hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10">
                   Abrir Conteúdo
                   <ChevronRight size={16} />
-                </button>
+                </div>
               </div>
             </div>
           ))
         ) : (
           <div className="text-center py-24 opacity-30">
-            <Search size={48} className="mx-auto mb-4" />
-            <p className="text-sm font-bold uppercase tracking-widest">Nenhum item encontrado</p>
+            <Search size={48} className="mx-auto mb-4 text-[var(--text-secondary)]" />
+            <p className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">Nenhum item encontrado</p>
           </div>
         )}
       </div>
