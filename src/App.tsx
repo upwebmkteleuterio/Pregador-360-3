@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
 import ScrollToTop from './components/ScrollToTop';
 import { Layout } from './components/Layout';
 import Generate from './pages/Generate';
@@ -23,6 +22,11 @@ import { AuthProvider } from './components/AuthProvider';
 import { useStore } from './store/useStore';
 import { Loader2 } from 'lucide-react';
 
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 function AppRoutes() {
   const { auth, authLoading } = useStore();
 
@@ -34,16 +38,19 @@ function AppRoutes() {
     );
   }
 
+  // Se NÃO estiver autenticado
   if (!auth.isAuthenticated) {
     return (
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+        {/* Qualquer outra rota redireciona para a Landing Page se deslogado */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
 
+  // Se ESTIVER autenticado
   return (
     <Layout>
       <Routes>
@@ -65,6 +72,7 @@ function AppRoutes() {
             <Route path="/admin/plans" element={<AdminPlans />} />
           </>
         )}
+        {/* Qualquer outra rota redireciona para o Home (Generate) se logado */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
@@ -75,20 +83,6 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <Toaster 
-          position="bottom-center"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#18181b',
-              color: '#fff',
-              border: '1px solid #27272a',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              borderRadius: '16px',
-            },
-          }}
-        />
         <ScrollToTop />
         <AppRoutes />
         <ExportModal />
