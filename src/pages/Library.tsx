@@ -22,8 +22,8 @@ export default function Library() {
     };
   }, [setLibraryState]);
 
-  // 1. Filtragem primária: Busca textual e Categoria (Sermão/Ilustração)
-  const itemsInCurrentContext = useMemo(() => {
+  // 1. Filtragem por busca e categoria (abas)
+  const baseItems = useMemo(() => {
     return items.filter(item => {
       const searchLower = library.searchQuery.toLowerCase();
       const matchesSearch = !library.searchQuery || 
@@ -36,40 +36,37 @@ export default function Library() {
     });
   }, [items, library.searchQuery, library.filter]);
 
-  // 2. Extração dinâmica de Tags baseada nos itens filtrados acima
+  // 2. Extração das tags únicas presentes nos itens filtrados acima
   const dynamicTags = useMemo(() => {
-    const tagNames = new Set<string>();
+    const names = new Set<string>();
     
-    itemsInCurrentContext.forEach(item => {
+    baseItems.forEach(item => {
       if (item.tags && Array.isArray(item.tags)) {
-        item.tags.forEach(tagName => {
-          if (tagName && typeof tagName === 'string') {
-            tagNames.add(tagName);
-          }
+        item.tags.forEach(t => {
+          if (t) names.add(t);
         });
       }
     });
     
-    // Converte os nomes únicos em objetos de tag (usando a cor configurada se existir)
-    return Array.from(tagNames)
+    return Array.from(names)
       .map(name => {
-        const tagConfig = allTags.find(t => t.name.toLowerCase() === name.toLowerCase());
+        const config = allTags.find(t => t.name.toLowerCase() === name.toLowerCase());
         return {
-          id: tagConfig?.id || name,
+          id: config?.id || name,
           name: name,
-          color: tagConfig?.color || '#71717a'
+          color: config?.color || '#71717a'
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [itemsInCurrentContext, allTags]);
+  }, [baseItems, allTags]);
 
-  // 3. Filtragem final: Itens que possuem a Tag selecionada (se houver)
+  // 3. Filtragem final pela tag selecionada
   const filteredItems = useMemo(() => {
-    if (!library.selectedTag) return itemsInCurrentContext;
-    return itemsInCurrentContext.filter(item => 
+    if (!library.selectedTag) return baseItems;
+    return baseItems.filter(item => 
       item.tags && item.tags.includes(library.selectedTag!)
     );
-  }, [itemsInCurrentContext, library.selectedTag]);
+  }, [baseItems, library.selectedTag]);
 
   return (
     <div className="space-y-8 pb-32 animate-in fade-in duration-500">
@@ -96,7 +93,7 @@ export default function Library() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-yellow-500 transition-colors" size={20} />
       </div>
 
-      {/* Abas Principais: Todos, Sermão, Ilustração */}
+      {/* Abas Principais */}
       <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50">
         {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
           <button
@@ -114,8 +111,8 @@ export default function Library() {
         ))}
       </div>
 
-      {/* Filtro de Tags Dinâmico (Horizontal Scroll) */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2">
+      {/* Lista de Tags (Horizontal Scroll) */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2 scroll-smooth">
         <button
           onClick={() => setLibraryState({ selectedTag: null })}
           className={cn(
@@ -145,7 +142,7 @@ export default function Library() {
         ))}
       </div>
 
-      {/* Lista de Conteúdo */}
+      {/* Lista de Itens */}
       <div className="space-y-4">
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => (
@@ -171,13 +168,12 @@ export default function Library() {
                   <h3 className="text-xl font-bold text-[var(--text-primary)] leading-tight group-hover:text-yellow-500 transition-colors">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-[var(--text-secondary)] line-clamp-1 opacity-70 italic">
+                  <p className="text-xs text-[var(--text-secondary)] line-clamp-1 opacity-70">
                     {item.topic}
                   </p>
                 </div>
               </div>
 
-              {/* Tags do Item Card */}
               {item.tags && item.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {item.tags.map(tagName => {
@@ -237,11 +233,9 @@ export default function Library() {
             </div>
           ))
         ) : (
-          <div className="text-center py-24 space-y-6 bg-[var(--bg-card)]/30 border border-dashed border-[var(--border-color)] rounded-[2.5rem]">
-            <div className="h-20 w-20 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-full flex items-center justify-center mx-auto text-[var(--text-secondary)] opacity-40">
-              <Search size={40} />
-            </div>
-            <p className="text-[var(--text-secondary)] text-sm px-10">Nenhum item encontrado nos seus arquivos.</p>
+          <div className="text-center py-24 opacity-30">
+            <Search size={48} className="mx-auto mb-4" />
+            <p className="text-sm font-bold uppercase tracking-widest">Nenhum item encontrado</p>
           </div>
         )}
       </div>
