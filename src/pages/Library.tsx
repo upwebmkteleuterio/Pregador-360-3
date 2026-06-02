@@ -55,10 +55,12 @@ export default function Library() {
   };
 
   // 1. Filtragem primária (Busca + Tipo de Item)
+  // Esta é a base para o que o usuário vê e para as tags que aparecerão no topo
   const baseItems = useMemo(() => {
+    if (!items) return [];
     return items.filter(item => {
-      const searchLower = library.searchQuery.toLowerCase();
-      const matchesSearch = !library.searchQuery || 
+      const searchLower = library.searchQuery.toLowerCase().trim();
+      const matchesSearch = !searchLower || 
                           (item.title && item.title.toLowerCase().includes(searchLower)) ||
                           (item.topic && item.topic.toLowerCase().includes(searchLower));
       
@@ -68,21 +70,28 @@ export default function Library() {
     });
   }, [items, library.searchQuery, library.filter]);
 
-  // 2. Extração de Tags Dinâmicas (Apenas as que aparecem nos itens atuais)
+  // 2. Extração de Tags Dinâmicas baseada nos itens filtrados
   const availableTags = useMemo(() => {
     const tagNames = new Set<string>();
+    
+    // Coletamos todas as tags únicas dos itens atualmente listados
     baseItems.forEach(item => {
-      if (item.tags) {
-        item.tags.forEach(t => tagNames.add(t));
+      if (Array.isArray(item.tags)) {
+        item.tags.forEach(t => {
+          if (typeof t === 'string' && t.trim()) {
+            tagNames.add(t.trim());
+          }
+        });
       }
     });
     
+    // Mapeamos os nomes para os objetos de configuração (cor, id)
     return Array.from(tagNames).map(name => {
-      const config = allTags.find(t => t.name === name);
+      const config = allTags.find(t => t.name.toLowerCase().trim() === name.toLowerCase().trim());
       return {
-        name,
+        name: name,
         color: config?.color || '#71717a',
-        id: config?.id || name
+        id: config?.id || `temp-${name}`
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [baseItems, allTags]);
@@ -90,9 +99,12 @@ export default function Library() {
   // 3. Filtragem final pela tag selecionada
   const filteredItems = useMemo(() => {
     if (!library.selectedTag) return baseItems;
-    return baseItems.filter(item => 
-      item.tags && item.tags.some(t => t.trim() === library.selectedTag?.trim())
-    );
+    
+    const selected = library.selectedTag.toLowerCase().trim();
+    return baseItems.filter(item => {
+      if (!item.tags || !Array.isArray(item.tags)) return false;
+      return item.tags.some(t => typeof t === 'string' && t.toLowerCase().trim() === selected);
+    });
   }, [baseItems, library.selectedTag]);
 
   return (
@@ -121,7 +133,7 @@ export default function Library() {
       </div>
 
       <div className="space-y-6">
-        {/* 1. Abas de Categorias */}
+        {/* Abas de Categorias */}
         <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50 max-w-md">
           {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
             <button
@@ -139,7 +151,7 @@ export default function Library() {
           ))}
         </div>
 
-        {/* 2. Filtro de Tags Horizontal Dinâmico */}
+        {/* Filtro de Tags Horizontal Dinâmico */}
         <div className="relative">
           <div 
             ref={scrollRef}
@@ -161,27 +173,30 @@ export default function Library() {
               Todas as Tags
             </button>
             
-            {availableTags.map((tag) => (
-              <button
-                key={tag.id}
-                onClick={() => setLibraryState({ selectedTag: tag.name })}
-                className={cn(
-                  "flex-shrink-0 flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all border",
-                  library.selectedTag === tag.name 
-                    ? "bg-yellow-500 text-zinc-950 border-yellow-500 shadow-xl shadow-yellow-500/10 scale-105 z-10" 
-                    : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-yellow-500/30"
-                )}
-              >
-                <div 
+            {availableTags.map((tag) => {
+              const isActive = library.selectedTag?.toLowerCase().trim() === tag.name.toLowerCase().trim();
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => setLibraryState({ selectedTag: tag.name })}
                   className={cn(
-                    "h-2 w-2 rounded-full",
-                    library.selectedTag === tag.name ? "bg-zinc-950" : ""
-                  )} 
-                  style={{ backgroundColor: library.selectedTag === tag.name ? undefined : tag.color }} 
-                />
-                {tag.name}
-              </button>
-            ))}
+                    "flex-shrink-0 flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all border",
+                    isActive 
+                      ? "bg-yellow-500 text-zinc-950 border-yellow-500 shadow-xl shadow-yellow-500/10 scale-105 z-10" 
+                      : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-yellow-500/30"
+                  )}
+                >
+                  <div 
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      isActive ? "bg-zinc-950" : ""
+                    )} 
+                    style={{ backgroundColor: isActive ? undefined : tag.color }} 
+                  />
+                  {tag.name}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -222,7 +237,7 @@ export default function Library() {
               {item.tags && item.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {item.tags.map(tagName => {
-                    const tagConfig = allTags.find(t => t.name === tagName);
+                    const tagConfig = allTags.find(t => t.name.toLowerCase().trim() === tagName.toLowerCase().trim());
                     return (
                       <div 
                         key={tagName}
