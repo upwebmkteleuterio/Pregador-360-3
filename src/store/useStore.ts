@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type MessageTone = 'Inspirador' | 'Exortativo' | 'Teológico' | 'Acolhedor' | 'Confrontador' | 'Evangelístico' | 'Profético' | 'Didático' | 'Pastoral';
-export type ItemType = 'Sermão' | 'Ilustração';
+export type ItemType = 'Sermão' | 'Ilustração' | 'Série';
 
 export interface ContentVersion {
   id: string;
@@ -22,6 +22,7 @@ export interface ContentItem {
   tags: string[];
   createdAt: string;
   versions: ContentVersion[];
+  episodesCount?: number; // Opcional para séries
 }
 
 export interface Note {
@@ -66,7 +67,12 @@ interface AppState {
   items: ContentItem[];
   plans: Plan[];
   payments: PaymentRecord[];
-  generatorForm: { type: ItemType; topic: string; tone: MessageTone; };
+  generatorForm: { 
+    type: ItemType; 
+    topic: string; 
+    tone: MessageTone;
+    episodes: number;
+  };
   modals: {
     exportOpen: boolean;
     historyOpen: boolean;
@@ -147,7 +153,7 @@ export const useStore = create<AppState>()(
       items: [],
       plans: [],
       payments: [],
-      generatorForm: { type: 'Sermão', topic: '', tone: 'Inspirador' },
+      generatorForm: { type: 'Sermão', topic: '', tone: 'Inspirador', episodes: 4 },
       modals: {
         exportOpen: false, historyOpen: false, moreMenuOpen: false, tagModalOpen: false,
         deleteConfirmOpen: false, deleteTagConfirmOpen: false, createEditTagModalOpen: false, aiCreditsOpen: false,
