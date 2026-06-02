@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/src/store/useStore';
-import { ChevronLeft, Save, Link as LinkIcon, Trash2, Tag as TagIcon, Loader2 } from 'lucide-react';
+import { ChevronLeft, Save, Link as LinkIcon, Trash2, Tag as TagIcon, Loader2, Copy, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { databaseService } from '../services/databaseService';
 
 export default function NoteEditor() {
@@ -18,6 +19,7 @@ export default function NoteEditor() {
   const [linkedItemId, setLinkedItemId] = useState<string | undefined>(undefined);
   const [noteTags, setNoteTags] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (existingNote) {
@@ -87,9 +89,31 @@ export default function NoteEditor() {
     }
   };
 
+  const handleCopy = () => {
+    const textToCopy = `${title}\n\n${content}`;
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="space-y-8 pb-32">
-       <EditorHeader onBack={() => navigate('/notes')} />
+    <div className="space-y-8 pb-32 relative">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {copied && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-32 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3"
+          >
+            <Check size={18} />
+            <span className="font-bold text-xs uppercase tracking-widest">Conteúdo copiado</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <EditorHeader onBack={() => navigate('/notes')} />
 
       <div className="space-y-6">
         <div className="space-y-2">
@@ -119,13 +143,25 @@ export default function NoteEditor() {
             onAddTag={() => setModalState('tagModalOpen', true, id)} 
           />
 
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Título da Nota"
-            className="w-full bg-transparent border-none text-3xl font-bold text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30 outline-none"
-          />
+          <div className="flex items-center gap-4">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Título da Nota"
+              className="flex-1 bg-transparent border-none text-3xl font-bold text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/30 outline-none"
+            />
+            {!isNew && (
+              <button 
+                onClick={handleCopy}
+                className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all active:scale-90 rounded-xl shrink-0"
+                title="Copiar Texto"
+              >
+                <Copy size={20} />
+              </button>
+            )}
+          </div>
+          
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
