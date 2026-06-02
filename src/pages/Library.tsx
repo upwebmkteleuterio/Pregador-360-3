@@ -55,7 +55,6 @@ export default function Library() {
   };
 
   // 1. Filtragem primária (Busca + Tipo de Item)
-  // Esta é a base para o que o usuário vê e para as tags que aparecerão no topo
   const baseItems = useMemo(() => {
     if (!items) return [];
     return items.filter(item => {
@@ -70,40 +69,39 @@ export default function Library() {
     });
   }, [items, library.searchQuery, library.filter]);
 
-  // 2. Extração de Tags Dinâmicas baseada nos itens filtrados
+  // 2. Extração de Tags Dinâmicas
+  // Extraímos apenas as tags dos itens que estão na tela (baseItems)
   const availableTags = useMemo(() => {
     const tagNames = new Set<string>();
     
-    // Coletamos todas as tags únicas dos itens atualmente listados
+    // Coletamos os nomes brutos
     baseItems.forEach(item => {
-      if (Array.isArray(item.tags)) {
+      if (item.tags && Array.isArray(item.tags)) {
         item.tags.forEach(t => {
-          if (typeof t === 'string' && t.trim()) {
-            tagNames.add(t.trim());
-          }
+          if (t && typeof t === 'string') tagNames.add(t.trim());
         });
       }
     });
     
-    // Mapeamos os nomes para os objetos de configuração (cor, id)
+    // Mapeamos para o formato visual, buscando a cor no estado global se existir
     return Array.from(tagNames).map(name => {
       const config = allTags.find(t => t.name.toLowerCase().trim() === name.toLowerCase().trim());
       return {
         name: name,
-        color: config?.color || '#71717a',
+        color: config?.color || '#71717a', // Fallback para cinza se não houver config
         id: config?.id || `temp-${name}`
       };
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [baseItems, allTags]);
 
-  // 3. Filtragem final pela tag selecionada
+  // 3. Filtragem final (pela Tag selecionada)
   const filteredItems = useMemo(() => {
     if (!library.selectedTag) return baseItems;
     
     const selected = library.selectedTag.toLowerCase().trim();
     return baseItems.filter(item => {
       if (!item.tags || !Array.isArray(item.tags)) return false;
-      return item.tags.some(t => typeof t === 'string' && t.toLowerCase().trim() === selected);
+      return item.tags.some(t => t && t.toLowerCase().trim() === selected);
     });
   }, [baseItems, library.selectedTag]);
 

@@ -83,7 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         topic: c.topic || '',
         tone: c.tone || 'Inspirador',
         content: c.content || '',
-        tags: c.content_tags ? c.content_tags.map((ct: any) => ct.tags.name) : [],
+        // Normalização: Filtramos valores nulos ou indefinidos e limpamos os nomes
+        tags: c.content_tags ? c.content_tags.map((ct: any) => ct.tags?.name).filter(Boolean) : [],
         createdAt: c.created_at,
         versions: c.content_versions.map((v: any) => ({
           id: v.id,
@@ -102,7 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         content: n.content || '',
         linked_content_id: n.linked_content_id,
         createdAt: n.created_at,
-        tags: n.note_tags ? n.note_tags.map((nt: any) => nt.tags.name) : []
+        // Normalização: Filtramos valores nulos ou indefinidos e limpamos os nomes
+        tags: n.note_tags ? n.note_tags.map((nt: any) => nt.tags?.name).filter(Boolean) : []
       })));
     }
 
