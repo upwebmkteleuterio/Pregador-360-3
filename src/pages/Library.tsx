@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
 import { Search, Plus, Tag as TagIcon, Trash2, Copy, ChevronRight } from 'lucide-react';
@@ -15,12 +15,44 @@ export default function Library() {
     tags: allTags 
   } = useStore();
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDown = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
   // Limpa filtros específicos ao sair da tela
   useEffect(() => {
     return () => {
       setLibraryState({ searchQuery: '', selectedTag: null });
     };
   }, [setLibraryState]);
+
+  // Lógica de Scroll com o Mouse (Drag to Scroll)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    isDown.current = true;
+    scrollRef.current.classList.add('active');
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeft.current = scrollRef.current.scrollLeft;
+  };
+
+  const handleMouseLeave = () => {
+    isDown.current = false;
+    if (scrollRef.current) scrollRef.current.classList.remove('active');
+  };
+
+  const handleMouseUp = () => {
+    isDown.current = false;
+    if (scrollRef.current) scrollRef.current.classList.remove('active');
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDown.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX.current) * 2; // Velocidade do scroll
+    scrollRef.current.scrollLeft = scrollLeft.current - walk;
+  };
 
   // 1. Filtragem primária por busca e categoria (Sermão/Ilustração)
   const baseItems = useMemo(() => {
@@ -93,9 +125,16 @@ export default function Library() {
           ))}
         </div>
 
-        {/* 2. Filtro de Tags Horizontal - ABAIXO das abas e com scroll aprimorado */}
+        {/* 2. Filtro de Tags Horizontal com Drag to Scroll */}
         <div className="relative">
-          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2 -mx-2 px-2 scroll-smooth cursor-grab active:cursor-grabbing select-none">
+          <div 
+            ref={scrollRef}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+            className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2 -mx-2 px-2 cursor-grab active:cursor-grabbing select-none"
+          >
             <button
               onClick={() => setLibraryState({ selectedTag: null })}
               className={cn(
@@ -238,13 +277,6 @@ export default function Library() {
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
-        }
-        /* Melhora a rolagem horizontal com scroll do mouse no desktop */
-        .scroll-smooth {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-          overflow-x: auto;
-          overscroll-behavior-x: contain;
         }
       `}</style>
     </div>
