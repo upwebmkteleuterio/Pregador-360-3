@@ -74,57 +74,67 @@ export default function Library() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-yellow-500 transition-colors" size={20} />
       </div>
 
-      {/* Abas de Categorias */}
-      <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50">
-        {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
-          <button
-            key={filter}
-            onClick={() => setLibraryState({ filter, selectedTag: null })}
-            className={cn(
-              "flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
-              library.filter === filter 
-                ? "bg-[var(--bg-main)] text-[var(--text-primary)] shadow-md" 
-                : "text-[var(--text-secondary)] hover:text-yellow-500"
-            )}
-          >
-            {filter === 'Todos' ? 'Todos' : filter === 'Sermão' ? 'Sermões' : 'Ilustrações'}
-          </button>
-        ))}
-      </div>
+      <div className="space-y-6">
+        {/* 1. Abas de Categorias - Estilo Pílula */}
+        <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50 max-w-md">
+          {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setLibraryState({ filter, selectedTag: null })}
+              className={cn(
+                "flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
+                library.filter === filter 
+                  ? "bg-[var(--bg-main)] text-[var(--text-primary)] shadow-md" 
+                  : "text-[var(--text-secondary)] hover:text-yellow-500"
+              )}
+            >
+              {filter === 'Todos' ? 'Todos' : filter === 'Sermão' ? 'Sermões' : 'Ilustrações'}
+            </button>
+          ))}
+        </div>
 
-      {/* Filtro de Tags Horizontal - Listando todas as tags cadastradas no sistema */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2 scroll-smooth">
-        <button
-          onClick={() => setLibraryState({ selectedTag: null })}
-          className={cn(
-            "flex-shrink-0 px-5 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all border",
-            !library.selectedTag 
-              ? "bg-yellow-500 text-zinc-950 border-yellow-500 shadow-lg shadow-yellow-500/10" 
-              : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-yellow-500/30"
-          )}
-        >
-          Todas as Tags
-        </button>
-        
-        {sortedTags.map((tag) => (
-          <button
-            key={tag.id}
-            onClick={() => setLibraryState({ selectedTag: tag.name })}
-            className={cn(
-              "flex-shrink-0 flex items-center gap-2.5 px-5 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all border",
-              library.selectedTag === tag.name 
-                ? "bg-yellow-500 text-zinc-950 border-yellow-500 shadow-lg shadow-yellow-500/10" 
-                : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-yellow-500/30"
-            )}
-          >
-            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: tag.color }} />
-            {tag.name}
-          </button>
-        ))}
+        {/* 2. Filtro de Tags Horizontal - ABAIXO das abas e com scroll aprimorado */}
+        <div className="relative">
+          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-2 -mx-2 px-2 scroll-smooth cursor-grab active:cursor-grabbing select-none">
+            <button
+              onClick={() => setLibraryState({ selectedTag: null })}
+              className={cn(
+                "flex-shrink-0 px-6 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all border",
+                !library.selectedTag 
+                  ? "bg-yellow-500 text-zinc-950 border-yellow-500 shadow-xl shadow-yellow-500/10 scale-105 z-10" 
+                  : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-yellow-500/30"
+              )}
+            >
+              Todas as Tags
+            </button>
+            
+            {sortedTags.map((tag) => (
+              <button
+                key={tag.id}
+                onClick={() => setLibraryState({ selectedTag: tag.name })}
+                className={cn(
+                  "flex-shrink-0 flex items-center gap-3 px-6 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all border",
+                  library.selectedTag === tag.name 
+                    ? "bg-yellow-500 text-zinc-950 border-yellow-500 shadow-xl shadow-yellow-500/10 scale-105 z-10" 
+                    : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-yellow-500/30"
+                )}
+              >
+                <div 
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    library.selectedTag === tag.name ? "bg-zinc-950" : ""
+                  )} 
+                  style={{ backgroundColor: library.selectedTag === tag.name ? undefined : tag.color }} 
+                />
+                {tag.name}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Lista de Itens */}
-      <div className="space-y-4">
+      <div className="space-y-4 pt-4">
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => (
             <div 
@@ -228,6 +238,13 @@ export default function Library() {
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        /* Melhora a rolagem horizontal com scroll do mouse no desktop */
+        .scroll-smooth {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          overflow-x: auto;
+          overscroll-behavior-x: contain;
         }
       `}</style>
     </div>
