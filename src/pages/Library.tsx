@@ -22,7 +22,7 @@ export default function Library() {
     };
   }, [setLibraryState]);
 
-  // 1. Filtragem por busca e categoria (abas)
+  // 1. Filtragem primária por busca e categoria (Sermão/Ilustração)
   const baseItems = useMemo(() => {
     return items.filter(item => {
       const searchLower = library.searchQuery.toLowerCase();
@@ -36,37 +36,18 @@ export default function Library() {
     });
   }, [items, library.searchQuery, library.filter]);
 
-  // 2. Extração das tags únicas presentes nos itens filtrados acima
-  const dynamicTags = useMemo(() => {
-    const names = new Set<string>();
-    
-    baseItems.forEach(item => {
-      if (item.tags && Array.isArray(item.tags)) {
-        item.tags.forEach(t => {
-          if (t) names.add(t);
-        });
-      }
-    });
-    
-    return Array.from(names)
-      .map(name => {
-        const config = allTags.find(t => t.name.toLowerCase() === name.toLowerCase());
-        return {
-          id: config?.id || name,
-          name: name,
-          color: config?.color || '#71717a'
-        };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [baseItems, allTags]);
-
-  // 3. Filtragem final pela tag selecionada
+  // 2. Filtragem final pela tag selecionada
   const filteredItems = useMemo(() => {
     if (!library.selectedTag) return baseItems;
     return baseItems.filter(item => 
       item.tags && item.tags.includes(library.selectedTag!)
     );
   }, [baseItems, library.selectedTag]);
+
+  // Ordenação das tags cadastradas para o filtro horizontal
+  const sortedTags = useMemo(() => {
+    return [...allTags].sort((a, b) => a.name.localeCompare(b.name));
+  }, [allTags]);
 
   return (
     <div className="space-y-8 pb-32 animate-in fade-in duration-500">
@@ -93,7 +74,7 @@ export default function Library() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-yellow-500 transition-colors" size={20} />
       </div>
 
-      {/* Abas Principais */}
+      {/* Abas de Categorias */}
       <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50">
         {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
           <button
@@ -111,7 +92,7 @@ export default function Library() {
         ))}
       </div>
 
-      {/* Lista de Tags (Horizontal Scroll) */}
+      {/* Filtro de Tags Horizontal - Listando todas as tags cadastradas no sistema */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2 scroll-smooth">
         <button
           onClick={() => setLibraryState({ selectedTag: null })}
@@ -125,7 +106,7 @@ export default function Library() {
           Todas as Tags
         </button>
         
-        {dynamicTags.map((tag) => (
+        {sortedTags.map((tag) => (
           <button
             key={tag.id}
             onClick={() => setLibraryState({ selectedTag: tag.name })}
