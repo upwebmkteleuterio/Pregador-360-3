@@ -100,7 +100,7 @@ export const databaseService = {
       .single();
   },
 
-  fetchContents: async () => {
+  fetchContents: async (userId: string) => {
     const { data, error } = await supabase
       .from('contents')
       .select(`
@@ -110,6 +110,7 @@ export const databaseService = {
           tags(*)
         )
       `)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
     return { data, error };
@@ -155,7 +156,7 @@ export const databaseService = {
       .eq('id', noteId);
   },
 
-  fetchNotes: async () => {
+  fetchNotes: async (userId: string) => {
     const { data, error } = await supabase
       .from('notes')
       .select(`
@@ -164,6 +165,7 @@ export const databaseService = {
           tags(*)
         )
       `)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false });
     
     return { data, error };

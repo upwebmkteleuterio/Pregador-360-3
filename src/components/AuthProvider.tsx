@@ -43,8 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleUserAuthenticated = async (userId: string, email: string) => {
     const [profileRes, contentsRes, notesRes, tagsRes, paymentsRes, plansRes] = await Promise.all([
       supabase.from('profiles').select('*, plans(*)').eq('id', userId).single(),
-      databaseService.fetchContents(),
-      databaseService.fetchNotes(),
+      databaseService.fetchContents(userId),
+      databaseService.fetchNotes(userId),
       databaseService.fetchTags(),
       databaseService.fetchPayments(),
       databaseService.fetchPlans()
