@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useStore, MessageTone, ItemType } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
-import { Sparkles, Mic, FileText, Lightbulb, Loader2, BookOpen, Heart, Flame, MessageSquareWarning, Wind, GraduationCap, Users, Layers } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Sparkles, Mic, FileText, Lightbulb, Loader2, BookOpen, Heart, Flame, MessageSquareWarning, Wind, GraduationCap, Users, Layers, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { generateAIContent } from '../services/geminiService';
 import { databaseService } from '../services/databaseService';
@@ -25,11 +25,14 @@ export default function Generate() {
   const navigate = useNavigate();
   const { generatorForm, setGeneratorForm, addItem, auth, setSubscriptionState, setModalState } = useStore();
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0, stage: 'idle' as 'idle' | 'ai' | 'saving' });
   
   const handleGenerate = async () => {
     if (!generatorForm.topic.trim() || !auth.user?.id) return;
     
     setLoading(true);
+    setProgress({ current: 0, total: generatorForm.type === 'Série' ? generatorForm.episodes : 1, stage: 'ai' });
+    
     try {
       const data = await generateAIContent(
         generatorForm.type,
@@ -43,6 +46,8 @@ export default function Generate() {
       }
 
       if (generatorForm.type === 'Série' && data.episodes) {
+        setProgress(prev => ({ ...prev, stage: 'saving' }));
+        
         // 1. Salva o item "Pai" da série
         const seriesId = await databaseService.saveNewContent({
           type: 'Série',
@@ -66,8 +71,9 @@ export default function Generate() {
           };
           addItem(seriesItem);
 
-          // 2. Salva cada episódio vinculado à série em paralelo para maior performance
-          const episodePromises = data.episodes.map(async (ep) => {
+          // 2. Salva cada episódio sequencialmente para atualizar o progresso visual
+          for (let i = 0; i < data.episodes.length; i++) {
+            const ep = data.episodes[i];
             const epId = await databaseService.saveNewContent({
               type: 'Sermão',
               title: ep.title,
@@ -97,15 +103,15 @@ export default function Generate() {
                 }]
               });
             }
-          });
-
-          await Promise.all(episodePromises);
+            setProgress(prev => ({ ...prev, current: i + 1 }));
+          }
 
           // 3. Navega para a tela da série
           navigate(`/series/${seriesId}`);
         }
       } else {
         // Geração normal (Sermão ou Ilustração)
+        setProgress(prev => ({ ...prev, stage: 'saving' }));
         const contentId = await databaseService.saveNewContent({
           type: generatorForm.type,
           title: data.title,
@@ -132,6 +138,7 @@ export default function Generate() {
               label: 'IA'
             }]
           });
+          setProgress(prev => ({ ...prev, current: 1 }));
           navigate(`/view/${contentId}`);
         }
       }
@@ -145,6 +152,7 @@ export default function Generate() {
       }
     } finally {
       setLoading(false);
+      setProgress({ current: 0, total: 0, stage: 'idle' });
     }
   };
 
@@ -153,6 +161,8 @@ export default function Generate() {
     { label: 'Ilustração', icon: Lightbulb },
     { label: 'Série', icon: Layers },
   ];
+
+  const progressPercentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
 
   return (
     <div className="space-y-8">
@@ -286,7 +296,7 @@ export default function Generate() {
             "w-full flex items-center justify-center gap-2 py-5 rounded-2xl font-bold uppercase tracking-widest transition-all relative overflow-hidden",
             generatorForm.topic.trim() && !loading
               ? "bg-yellow-500 text-zinc-950 shadow-xl shadow-yellow-500/20 active:scale-[0.98]"
-              : "bg-[var(--border-color)] text-[var(--text-secondary)] cursor-not-allowed"
+              : "bg-[var(--bg-card)] text-[var(--text-secondary)] cursor-not-allowed"
           )}
         >
           {loading ? (
@@ -302,18 +312,55 @@ export default function Generate() {
           )}
         </button>
 
-        {loading && (
-          <motion.p 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center text-xs text-[var(--text-secondary)] font-medium"
-          >
-            {generatorForm.type === 'Série' 
-              ? "Articulando episódios e gerando sua série. Isso pode levar alguns minutos..." 
-              : "Gerando seu conteúdo. Aguarde, isso pode levar até 1 minuto..."}
-            <span className="animate-pulse">...</span>
-          </motion.p>
-        )}
+        <AnimatePresence>
+          {loading && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[2rem] p-6 space-y-4 shadow-2xl"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-yellow-500/10 rounded-lg text-yellow-500">
+                    {progress.stage === 'ai' ? <Sparkles size={18} className="animate-pulse" /> : <Loader2 size={18} className="animate-spin" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-widest">
+                      {progress.stage === 'ai' ? 'Consultando Inteligência' : 'Organizando Episódios'}
+                    </p>
+                    <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.15em] mt-0.5">
+                      {progress.stage === 'ai' ? 'Articulando temas bíblicos...' : `Salvando ${progress.current} de ${progress.total}`}
+                    </p>
+                  </div>
+                </div>
+                {progress.stage === 'saving' && progress.current === progress.total && (
+                  <CheckCircle2 size={20} className="text-green-500 animate-bounce" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)]">
+                  <span>Progresso Geral</span>
+                  <span>{Math.round(progressPercentage)}%</span>
+                </div>
+                <div className="h-1.5 bg-[var(--bg-main)] rounded-full overflow-hidden border border-[var(--border-color)]/30">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPercentage}%` }}
+                    className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400"
+                  />
+                </div>
+              </div>
+
+              <p className="text-center text-[10px] text-[var(--text-secondary)] italic">
+                {generatorForm.type === 'Série' 
+                  ? "Sua série está sendo preparada com profundidade teológica. Por favor, não feche a página." 
+                  : "Preparando seu conteúdo personalizado..."}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <style>{`
