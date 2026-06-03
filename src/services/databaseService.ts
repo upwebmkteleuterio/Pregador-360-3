@@ -49,7 +49,8 @@ export const databaseService = {
           title: item.title,
           topic: item.topic,
           tone: item.tone,
-          content: item.content
+          content: item.content,
+          parent_series_id: item.parentSeriesId // Suporte para séries
         })
         .select()
         .single();
@@ -59,12 +60,15 @@ export const databaseService = {
         return null;
       }
 
-      await supabase.from('content_versions').insert({
-        content_id: content.id,
-        title: content.title,
-        content: content.content,
-        label: 'IA'
-      });
+      // Evita criar versão para o item do tipo 'Série' (que é apenas um container)
+      if (item.type !== 'Série') {
+        await supabase.from('content_versions').insert({
+          content_id: content.id,
+          title: content.title,
+          content: content.content,
+          label: 'IA'
+        });
+      }
 
       return content.id;
     } catch (err) {

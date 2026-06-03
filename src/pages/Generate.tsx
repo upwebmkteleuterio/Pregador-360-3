@@ -34,40 +34,104 @@ export default function Generate() {
       const data = await generateAIContent(
         generatorForm.type,
         generatorForm.topic,
-        generatorForm.tone
+        generatorForm.tone,
+        generatorForm.episodes
       );
 
-      const contentId = await databaseService.saveNewContent({
-        type: generatorForm.type,
-        title: data.title,
-        topic: data.topic || generatorForm.topic,
-        tone: generatorForm.tone,
-        content: data.content
-      });
+      if (data.remainingCredits !== undefined) {
+        setSubscriptionState({ credits: data.remainingCredits });
+      }
 
-      if (contentId) {
-        if (data.remainingCredits !== undefined) {
-          setSubscriptionState({ credits: data.remainingCredits });
+      if (generatorForm.type === 'Série' && data.episodes) {
+        // 1. Salva o item "Pai" da série
+        const seriesId = await databaseService.saveNewContent({
+          type: 'Série',
+          title: data.title,
+          topic: data.topic || generatorForm.topic,
+          tone: generatorForm.tone,
+          content: `Série de ${data.episodes.length} episódios.`
+        });
+
+        if (seriesId) {
+          const seriesItem = {
+            id: seriesId,
+            type: 'Série' as const,
+            title: data.title,
+            topic: data.topic || generatorForm.topic,
+            tone: generatorForm.tone,
+            content: `Série de ${data.episodes.length} episódios.`,
+            tags: [],
+            createdAt: new Date().toISOString(),
+            versions: []
+          };
+          addItem(seriesItem);
+
+          // 2. Salva cada episódio vinculado à série
+          for (const ep of data.episodes) {
+            const epId = await databaseService.saveNewContent({
+              type: 'Sermão',
+              title: ep.title,
+              topic: generatorForm.topic,
+              tone: generatorForm.tone,
+              content: ep.content,
+              parentSeriesId: seriesId
+            });
+
+            if (epId) {
+              addItem({
+                id: epId,
+                type: 'Sermão',
+                title: ep.title,
+                topic: generatorForm.topic,
+                tone: generatorForm.tone,
+                content: ep.content,
+                tags: [],
+                createdAt: new Date().toISOString(),
+                parentSeriesId: seriesId,
+                versions: [{
+                  id: crypto.randomUUID(),
+                  title: ep.title,
+                  content: ep.content,
+                  createdAt: new Date().toISOString(),
+                  label: 'IA'
+                }]
+              });
+            }
+          }
+
+          // 3. Navega para a tela da série
+          navigate(`/series/${seriesId}`);
         }
-        
-        addItem({
-          id: contentId,
+      } else {
+        // Geração normal (Sermão ou Ilustração)
+        const contentId = await databaseService.saveNewContent({
           type: generatorForm.type,
           title: data.title,
           topic: data.topic || generatorForm.topic,
           tone: generatorForm.tone,
-          content: data.content,
-          tags: [],
-          createdAt: new Date().toISOString(),
-          versions: [{
-            id: crypto.randomUUID(),
-            title: data.title,
-            content: data.content,
-            createdAt: new Date().toISOString(),
-            label: 'IA'
-          }]
+          content: data.content
         });
-        navigate(`/view/${contentId}`);
+
+        if (contentId) {
+          addItem({
+            id: contentId,
+            type: generatorForm.type,
+            title: data.title,
+            topic: data.topic || generatorForm.topic,
+            tone: generatorForm.tone,
+            content: data.content,
+            tags: [],
+            createdAt: new Date().toISOString(),
+            versions: [{
+              id: crypto.randomUUID(),
+              title: data.title,
+              content: data.content,
+              createdAt: new Date().toISOString(),
+              label: 'IA'
+            }]
+          });
+          navigate(`/view/${contentId}`);
+        }
       }
     } catch (error: any) {
       console.error('Generation failed:', error);

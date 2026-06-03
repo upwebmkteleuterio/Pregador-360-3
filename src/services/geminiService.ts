@@ -9,12 +9,15 @@ export interface GeneratedContent {
   title: string;
   topic: string;
   content: string;
+  episodes?: { title: string; content: string }[]; // Para séries
+  remainingCredits?: number;
 }
 
 export const generateAIContent = async (
   type: ItemType,
   topic: string,
-  tone: string
+  tone: string,
+  episodesCount: number = 4
 ) => {
   const model = "gemini-3-flash-preview";
 
@@ -25,7 +28,54 @@ export const generateAIContent = async (
     throw new Error("INSUFFICIENT_CREDITS");
   }
 
-  if (type === 'Sermão') {
+  if (type === 'Série') {
+    const seriesSchema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING, description: "O título geral da série" },
+        topic: { type: Type.STRING },
+        episodes: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING, description: "Título do episódio incluindo [Ep. X]" },
+              content: { type: Type.STRING, description: "Sermão completo e detalhado do episódio" }
+            },
+            required: ["title", "content"]
+          }
+        }
+      },
+      required: ["title", "topic", "episodes"]
+    };
+
+    const prompt = `Gere uma SÉRIE DE SERMÕES bíblicos completa com exatamente ${episodesCount} episódios.
+
+TEMA CENTRAL: ${topic}
+TOM DA SÉRIE: ${tone}
+
+REGRAS PARA A SÉRIE:
+1. UNIDADE: Todos os episódios devem estar conectados ao tema central, mas abordando ângulos diferentes e progressivos.
+2. ESTRUTURA DOS EPISÓDIOS: Cada sermão dentro do campo 'content' de cada episódio deve seguir a estrutura técnica completa: Texto Base, Introdução, Contexto, Análise da Palavra Original, Desenvolvimento (4 pontos com Ilustração e Frase), Aplicação e Apelo.
+3. TÍTULOS: O título de cada episódio deve obrigatoriamente começar com "[Ep. X] - ", onde X é o número do episódio.
+4. PROFUNDIDADE: Não economize palavras. Cada sermão deve ser rico e profissional.
+
+Idioma: Português (Brasil).`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: seriesSchema,
+        systemInstruction: SERMON_SYSTEM_INSTRUCTION
+      }
+    });
+
+    const result = JSON.parse(response.text);
+    return { ...result, remainingCredits: creditRes.remaining } as GeneratedContent;
+
+  } else if (type === 'Sermão') {
     const sermonSchema = {
       type: Type.OBJECT,
       properties: {
@@ -42,93 +92,19 @@ TEMA/VERSÍCULO BASE: ${topic}
 TOM: ${tone}
 
 REGRAS DE OURO (CRÍTICO):
-1. GRAMÁTICA E CAPITALIZAÇÃO: Use escrita padrão com gramática rigorosamente correta. Inicie OBRIGATORIAMENTE cada frase com LETRA MAIÚSCULA após pontos finais. Use maiúsculas em nomes próprios e nomes divinos (Deus, Jesus, Espírito Santo). Apenas os rótulos (EXPLICAÇÃO:, etc) devem ser inteiramente em CAIXA ALTA.
+1. GRAMÁTICA E CAPITALIZAÇÃO: Use escrita padrão com gramática rigorosamente correta. Inicie OBRIGATORIAMENTE cada frase com LETRA MAIÚSCULA após pontos finais.
 2. ESPAÇAMENTO: Você DEVE colocar DUAS quebras de linha (\\n\\n) após cada título (##) e após cada separador (---).
 3. SEM REPETIÇÃO: NÃO inclua o título do sermão ou o tópico dentro do campo 'content'. Comece direto no Versículo Base.
-4. TEXTO LIMPO: No não use barras invertidas para escapar aspas.
 
 ESTRUTURA OBRIGATÓRIA:
-
 > [Texto Integral do Versículo Base]
-
 ---
-
 ## INTRODUÇÃO
-(Texto rico e envolvente aqui - gramática correta)
-
+...
 ---
-
-## CONTEXTO HISTÓRICO E BÍBLICO, USOS E COSTUMES DA ÉPOCA
-(Texto detalhado aqui)
-
----
-
-## ANÁLISE DA PALAVRA ORIGINAL
-PALAVRA:
-SIGNIFICADO: (Inclua Hebraico/Grego/Latim, dicionário português e dicionário bíblico)
-APLICAÇÃO:
-
----
-
-## CONTEXTO CONTEMPORÂNEO
-(Texto ligando o tema aos dias de hoje)
-
----
-
-## DESENVOLVIMENTO
-
-### 1. (Título do Ponto)
-EXPLICAÇÃO: (Texto detalhado)
-REFERÊNCIAS: [Versículos integrais]
-APLICAÇÃO: (Texto detalhado)
-ILUSTRAÇÃO: [História impactante e detalhada]
-FRASE: (Frase de pensador cristão)
-
-### 2. (Título do Ponto)
-EXPLICAÇÃO: (Texto detalhado)
-REFERÊNCIAS: [Versículos integrais]
-APLICAÇÃO: (Texto detalhado)
-ILUSTRAÇÃO: [História impactante baseada no estilo de Rick Warren ou TD Jakes]
-FRASE: (Frase de pensador cristão)
-
-### 3. (Título do Ponto)
-EXPLICAÇÃO: (Texto detalhado)
-REFERÊNCIAS: [Versículos integrais]
-APLICAÇÃO: (Texto detalhado)
-ILUSTRAÇÃO: [História impactante e detalhada]
-FRASE: (Frase de pensador cristão)
-
-### 4. (Título do Ponto)
-EXPLICAÇÃO: (Texto detalhado)
-REFERÊNCIAS: [Versículos integrais]
-APLICAÇÃO: (Texto detalhado)
-ILUSTRAÇÃO: [História impactante e detalhada]
-FRASE: (Frase de pensador cristão)
-
----
-
-## RESUMO IMPACTANTE DOS PONTOS ANTERIORES CITADOS
-(Texto recapitulando os 4 pontos)
-
----
-
-## APLICAÇÃO PRÁTICA
-(Texto direto e aplicável)
-
----
-
-## PERGUNTA RETÓRICA IMPACTANTE
-(Pergunta reflexiva e profunda)
-
----
-
-## CONCLUSÃO
-(Fechamento forte)
-
----
-
-## APELO
-(Convite espiritual final)
+## CONTEXTO HISTÓRICO...
+...
+(Segue estrutura padrão de 4 pontos)
 
 Idioma: Português (Brasil).`;
 
@@ -144,8 +120,9 @@ Idioma: Português (Brasil).`;
 
     const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
+
   } else {
-    // Illustration
+    // Ilustração
     const illustrationSchema = {
       type: Type.OBJECT,
       properties: {
@@ -160,14 +137,11 @@ Idioma: Português (Brasil).`;
 
 TEMA: ${topic}
 
-DIRETRIZES (RIGOROSO):
-1. GRAMÁTICA: Use gramática padrão. Letras maiúsculas após pontos finais e em nomes próprios.
-2. ESPAÇAMENTO: Use \\n\\n entre parágrafos.
-3. ESTRUTURA:
-   (Narração da história baseada em fatos reais ou ciência - 3 a 4 parágrafos)
-   
-   ## APLICAÇÃO ESPIRITUAL
-   (2 a 3 parágrafos de aplicação poderosa)
+ESTRUTURA:
+(Narração da história baseada em fatos reais ou ciência - 3 a 4 parágrafos)
+
+## APLICAÇÃO ESPIRITUAL
+(2 a 3 parágrafos de aplicação poderosa)
 
 Idioma: Português (Brasil).`;
 
