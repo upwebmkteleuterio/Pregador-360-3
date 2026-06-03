@@ -11,11 +11,16 @@ export interface BibleAiResult {
 export async function consultBibleAi(query: string): Promise<BibleAiResult> {
   const apiKey = process.env.GEMINI_API_KEY || "";
   
+  if (!apiKey) {
+    throw new Error("A chave GEMINI_API_KEY não foi configurada.");
+  }
+
   const creditRes = await databaseService.deductCredit(`Pesquisa Bíblica: ${query.substring(0, 30)}...`);
   if (!creditRes.success) {
     throw new Error("INSUFFICIENT_CREDITS");
   }
 
+  // Inicialização dentro da função para evitar erros de carregamento
   const ai = new GoogleGenAI(apiKey);
   const genModel = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
   
