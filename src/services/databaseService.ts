@@ -2,7 +2,7 @@ import { supabase } from '../integrations/supabase/client';
 import { ContentItem, Note, Plan } from "../store/useStore";
 
 /**
- * Database Service - Supabase Edition (Secure Refactor)
+ * Database Service - Supabase Edition
  */
 
 export const databaseService = {
@@ -49,7 +49,8 @@ export const databaseService = {
           title: item.title,
           topic: item.topic,
           tone: item.tone,
-          content: item.content
+          content: item.content,
+          parent_series_id: item.parentSeriesId // Novo campo para vínculo de série
         })
         .select()
         .single();
@@ -59,6 +60,7 @@ export const databaseService = {
         return null;
       }
 
+      // Salva versão inicial
       await supabase.from('content_versions').insert({
         content_id: content.id,
         title: content.title,
@@ -171,7 +173,7 @@ export const databaseService = {
     return { data, error };
   },
 
-  // --- PLANOS (ADMIN - Secure via Edge Function) ---
+  // --- PLANOS ---
 
   fetchPlans: async () => {
     return await supabase

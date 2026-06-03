@@ -5,132 +5,88 @@ import { databaseService } from "./databaseService";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+export interface GeneratedEpisode {
+  title: string;
+  content: string;
+}
+
 export interface GeneratedContent {
   title: string;
   topic: string;
   content: string;
+  episodes?: GeneratedEpisode[]; // Opcional para séries
 }
 
 export const generateAIContent = async (
   type: ItemType,
   topic: string,
-  tone: string
+  tone: string,
+  episodesCount: number = 4
 ) => {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-2.0-flash";
 
-  // Verificação de crédito segura via servidor
   const creditRes = await databaseService.deductCredit(`Geração de ${type}: ${topic.substring(0, 30)}...`);
   
   if (!creditRes.success) {
     throw new Error("INSUFFICIENT_CREDITS");
   }
 
-  if (type === 'Sermão') {
+  if (type === 'Série') {
+    const seriesSchema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING, description: "Título criativo para a série de mensagens" },
+        topic: { type: Type.STRING, description: "O tema central da série" },
+        content: { type: Type.STRING, description: "Uma breve introdução ou visão geral da série" },
+        episodes: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING, description: "Título do episódio (ex: Ep. 1 - O Início)" },
+              content: { type: Type.STRING, description: "O sermão completo deste episódio seguindo a estrutura técnica" }
+            },
+            required: ["title", "content"]
+          }
+        }
+      },
+      required: ["title", "topic", "content", "episodes"]
+    };
+
+    const prompt = `Você é um mentor de homilética. Crie uma SÉRIE DE MENSAGENS bíblicas com EXATAMENTE ${episodesCount} episódios.
+    TEMA CENTRAL: ${topic}
+    TOM: ${tone}
+
+    Cada episódio deve ser um SERMÃO COMPLETO e PROFUNDO, mantendo a conexão temática entre eles para formar uma jornada espiritual.
+    Use a estrutura técnica padrão para o conteúdo de cada episódio (Introdução, Contexto, 4 Pontos com Ilustração e Aplicação, Conclusão).
+    
+    Importante: Mantenha a gramática perfeita e inicie frases com letra maiúscula.`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: seriesSchema,
+        systemInstruction: SERMON_SYSTEM_INSTRUCTION
+      }
+    });
+
+    const result = JSON.parse(response.text) as GeneratedContent;
+    return { ...result, remainingCredits: creditRes.remaining };
+
+  } else if (type === 'Sermão') {
     const sermonSchema = {
       type: Type.OBJECT,
       properties: {
         title: { type: Type.STRING },
-        topic: { type: Type.STRING, description: "Reference verse or main topic" },
-        content: { type: Type.STRING, description: "The full sermon formatted as requested" }
+        topic: { type: Type.STRING },
+        content: { type: Type.STRING }
       },
       required: ["title", "topic", "content"]
     };
 
-    const prompt = `Gere um SERMÃO bíblico completo seguindo a estrutura técnica abaixo.
-
-TEMA/VERSÍCULO BASE: ${topic}
-TOM: ${tone}
-
-REGRAS DE OURO (CRÍTICO):
-1. GRAMÁTICA E CAPITALIZAÇÃO: Use escrita padrão com gramática rigorosamente correta. Inicie OBRIGATORIAMENTE cada frase com LETRA MAIÚSCULA após pontos finais. Use maiúsculas em nomes próprios e nomes divinos (Deus, Jesus, Espírito Santo). Apenas os rótulos (EXPLICAÇÃO:, etc) devem ser inteiramente em CAIXA ALTA.
-2. ESPAÇAMENTO: Você DEVE colocar DUAS quebras de linha (\\n\\n) após cada título (##) e após cada separador (---).
-3. SEM REPETIÇÃO: NÃO inclua o título do sermão ou o tópico dentro do campo 'content'. Comece direto no Versículo Base.
-4. TEXTO LIMPO: No não use barras invertidas para escapar aspas.
-
-ESTRUTURA OBRIGATÓRIA:
-
-> [Texto Integral do Versículo Base]
-
----
-
-## INTRODUÇÃO
-(Texto rico e envolvente aqui - gramática correta)
-
----
-
-## CONTEXTO HISTÓRICO E BÍBLICO, USOS E COSTUMES DA ÉPOCA
-(Texto detalhado aqui)
-
----
-
-## ANÁLISE DA PALAVRA ORIGINAL
-PALAVRA:
-SIGNIFICADO: (Inclua Hebraico/Grego/Latim, dicionário português e dicionário bíblico)
-APLICAÇÃO:
-
----
-
-## CONTEXTO CONTEMPORÂNEO
-(Texto ligando o tema aos dias de hoje)
-
----
-
-## DESENVOLVIMENTO
-
-### 1. (Título do Ponto)
-EXPLICAÇÃO: (Texto detalhado)
-REFERÊNCIAS: [Versículos integrais]
-APLICAÇÃO: (Texto detalhado)
-ILUSTRAÇÃO: [História impactante e detalhada]
-FRASE: (Frase de pensador cristão)
-
-### 2. (Título do Ponto)
-EXPLICAÇÃO: (Texto detalhado)
-REFERÊNCIAS: [Versículos integrais]
-APLICAÇÃO: (Texto detalhado)
-ILUSTRAÇÃO: [História impactante baseada no estilo de Rick Warren ou TD Jakes]
-FRASE: (Frase de pensador cristão)
-
-### 3. (Título do Ponto)
-EXPLICAÇÃO: (Texto detalhado)
-REFERÊNCIAS: [Versículos integrais]
-APLICAÇÃO: (Texto detalhado)
-ILUSTRAÇÃO: [História impactante e detalhada]
-FRASE: (Frase de pensador cristão)
-
-### 4. (Título do Ponto)
-EXPLICAÇÃO: (Texto detalhado)
-REFERÊNCIAS: [Versículos integrais]
-APLICAÇÃO: (Texto detalhado)
-ILUSTRAÇÃO: [História impactante e detalhada]
-FRASE: (Frase de pensador cristão)
-
----
-
-## RESUMO IMPACTANTE DOS PONTOS ANTERIORES CITADOS
-(Texto recapitulando os 4 pontos)
-
----
-
-## APLICAÇÃO PRÁTICA
-(Texto direto e aplicável)
-
----
-
-## PERGUNTA RETÓRICA IMPACTANTE
-(Pergunta reflexiva e profunda)
-
----
-
-## CONCLUSÃO
-(Fechamento forte)
-
----
-
-## APELO
-(Convite espiritual final)
-
-Idioma: Português (Brasil).`;
+    const prompt = `Gere um SERMÃO bíblico completo. TEMA: ${topic}. TOM: ${tone}.`;
 
     const response = await ai.models.generateContent({
       model,
@@ -145,31 +101,18 @@ Idioma: Português (Brasil).`;
     const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
   } else {
-    // Illustration
+    // Ilustração
     const illustrationSchema = {
       type: Type.OBJECT,
       properties: {
         title: { type: Type.STRING },
         topic: { type: Type.STRING },
-        content: { type: Type.STRING, description: "O corpo da história da ilustração e a aplicação moral" }
+        content: { type: Type.STRING }
       },
       required: ["title", "topic", "content"]
     };
 
-    const prompt = `Você é um curador de ilustrações cristãs de elite. Sua tarefa é gerar uma ILUSTRAÇÃO IMPACTANTE baseada no tema fornecido.
-
-TEMA: ${topic}
-
-DIRETRIZES (RIGOROSO):
-1. GRAMÁTICA: Use gramática padrão. Letras maiúsculas após pontos finais e em nomes próprios.
-2. ESPAÇAMENTO: Use \\n\\n entre parágrafos.
-3. ESTRUTURA:
-   (Narração da história baseada em fatos reais ou ciência - 3 a 4 parágrafos)
-   
-   ## APLICAÇÃO ESPIRITUAL
-   (2 a 3 parágrafos de aplicação poderosa)
-
-Idioma: Português (Brasil).`;
+    const prompt = `Gere uma ILUSTRAÇÃO IMPACTANTE. TEMA: ${topic}.`;
 
     const response = await ai.models.generateContent({
       model,

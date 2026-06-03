@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStore, MessageTone, ItemType } from '@/src/store/useStore';
+import { useStore, MessageTone, ItemType, ContentItem } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
 import { Sparkles, Mic, FileText, Lightbulb, Loader2, BookOpen, Heart, Flame, MessageSquareWarning, Wind, GraduationCap, Users, Layers } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -34,40 +34,103 @@ export default function Generate() {
       const data = await generateAIContent(
         generatorForm.type,
         generatorForm.topic,
-        generatorForm.tone
+        generatorForm.tone,
+        generatorForm.episodes
       );
 
-      const contentId = await databaseService.saveNewContent({
-        type: generatorForm.type,
-        title: data.title,
-        topic: data.topic || generatorForm.topic,
-        tone: generatorForm.tone,
-        content: data.content
-      });
+      // --- LOGICA PARA SÉRIE ---
+      if (generatorForm.type === 'Série' && data.episodes) {
+        // 1. Cria o item principal da Série
+        const seriesId = await databaseService.saveNewContent({
+          type: 'Série',
+          title: data.title,
+          topic: data.topic || generatorForm.topic,
+          tone: generatorForm.tone,
+          content: data.content
+        });
 
-      if (contentId) {
-        if (data.remainingCredits !== undefined) {
-          setSubscriptionState({ credits: data.remainingCredits });
+        if (seriesId) {
+          const seriesItem: ContentItem = {
+            id: seriesId,
+            type: 'Série',
+            title: data.title,
+            topic: data.topic || generatorForm.topic,
+            tone: generatorForm.tone,
+            content: data.content,
+            tags: [],
+            createdAt: new Date().toISOString(),
+            versions: []
+          };
+          addItem(seriesItem);
+
+          // 2. Cria cada episódio vinculado
+          for (const ep of data.episodes) {
+            const epId = await databaseService.saveNewContent({
+              type: 'Sermão',
+              title: ep.title,
+              topic: seriesItem.topic,
+              tone: seriesItem.tone,
+              content: ep.content,
+              parentSeriesId: seriesId // Vínculo crucial
+            });
+
+            if (epId) {
+              addItem({
+                id: epId,
+                type: 'Sermão',
+                title: ep.title,
+                topic: seriesItem.topic,
+                tone: seriesItem.tone,
+                content: ep.content,
+                parentSeriesId: seriesId,
+                tags: [],
+                createdAt: new Date().toISOString(),
+                versions: []
+              });
+            }
+          }
+
+          if (data.remainingCredits !== undefined) {
+            setSubscriptionState({ credits: data.remainingCredits });
+          }
+          
+          navigate(`/series/${seriesId}`);
         }
-        
-        addItem({
-          id: contentId,
+      } 
+      // --- LOGICA PARA SERMÃO OU ILUSTRAÇÃO ---
+      else {
+        const contentId = await databaseService.saveNewContent({
           type: generatorForm.type,
           title: data.title,
           topic: data.topic || generatorForm.topic,
           tone: generatorForm.tone,
-          content: data.content,
-          tags: [],
-          createdAt: new Date().toISOString(),
-          versions: [{
-            id: crypto.randomUUID(),
-            title: data.title,
-            content: data.content,
-            createdAt: new Date().toISOString(),
-            label: 'IA'
-          }]
+          content: data.content
         });
-        navigate(`/view/${contentId}`);
+
+        if (contentId) {
+          if (data.remainingCredits !== undefined) {
+            setSubscriptionState({ credits: data.remainingCredits });
+          }
+          
+          addItem({
+            id: contentId,
+            type: generatorForm.type,
+            title: data.title,
+            topic: data.topic || generatorForm.topic,
+            tone: generatorForm.tone,
+            content: data.content,
+            tags: [],
+            createdAt: new Date().toISOString(),
+            versions: [{
+              id: crypto.randomUUID(),
+              title: data.title,
+              content: data.content,
+              createdAt: new Date().toISOString(),
+              label: 'IA'
+            }]
+          });
+          navigate(`/view/${contentId}`);
+        }
       }
     } catch (error: any) {
       console.error('Generation failed:', error);
