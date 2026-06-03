@@ -159,7 +159,7 @@ export const useStore = create<AppState>()(
         deleteConfirmOpen: false, deleteTagConfirmOpen: false, createEditTagModalOpen: false, aiCreditsOpen: false,
         audioPlayerOpen: false, currentItemId: null, currentTagId: null, restoredContent: null,
       },
-      library: { searchQuery: '', filter: 'Todos', selectedTag: null },
+      library: { searchQuery: '', filter: 'Sermão', selectedTag: null },
       tags: [],
       notes: [],
       notesLibrary: { searchQuery: '', selectedTag: null },

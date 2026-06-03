@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
-import { Search, Plus, Tag as TagIcon, Trash2, Copy, ChevronRight } from 'lucide-react';
+import { Search, Plus, Tag as TagIcon, Trash2, Copy, ChevronRight, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Library() {
@@ -55,7 +55,6 @@ export default function Library() {
   };
 
   // 1. Filtragem primária (Busca + Tipo de Item)
-  // Este é o conjunto de dados base sobre o qual as tags serão extraídas
   const baseItems = useMemo(() => {
     if (!items) return [];
     return items.filter(item => {
@@ -71,7 +70,6 @@ export default function Library() {
   }, [items, library.searchQuery, library.filter]);
 
   // 2. Extração Dinâmica de Tags Vinculadas
-  // Mostra apenas as tags que existem nos itens visíveis (baseItems)
   const availableTags = useMemo(() => {
     const tagNamesFound = new Set<string>();
     
@@ -83,7 +81,6 @@ export default function Library() {
       }
     });
 
-    // Mapeia os nomes encontrados para as configurações de cores do sistema
     return Array.from(tagNamesFound).map(name => {
       const config = allTags.find(t => t.name.toLowerCase().trim() === name.toLowerCase().trim());
       return {
@@ -131,9 +128,9 @@ export default function Library() {
       </div>
 
       <div className="space-y-6">
-        {/* Abas de Categorias */}
+        {/* Abas de Categorias: [SERMÕES] [SÉRIES] [ILUSTRAÇÕES] */}
         <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50 max-w-md">
-          {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
+          {(['Sermão', 'Série', 'Ilustração'] as const).map((filter) => (
             <button
               key={filter}
               onClick={() => setLibraryState({ filter, selectedTag: null })}
@@ -144,7 +141,7 @@ export default function Library() {
                   : "text-[var(--text-secondary)] hover:text-yellow-500"
               )}
             >
-              {filter === 'Todos' ? 'Todos' : filter === 'Sermão' ? 'Sermões' : 'Ilustrações'}
+              {filter === 'Sermão' ? 'Sermões' : filter === 'Série' ? 'Séries' : 'Ilustrações'}
             </button>
           ))}
         </div>
@@ -210,7 +207,9 @@ export default function Library() {
             >
               <div 
                 className="absolute left-0 top-0 bottom-0 w-1.5 transition-colors" 
-                style={{ backgroundColor: item.type === 'Sermão' ? '#EAB308' : '#3B82F6' }}
+                style={{ 
+                  backgroundColor: item.type === 'Sermão' ? '#EAB308' : item.type === 'Série' ? '#8B5CF6' : '#3B82F6' 
+                }}
               />
               
               <div className="flex justify-between items-start">
@@ -229,6 +228,9 @@ export default function Library() {
                   <p className="text-xs text-[var(--text-secondary)] line-clamp-1 opacity-70">
                     {item.topic}
                   </p>
+                </div>
+                <div className="text-[var(--text-secondary)] opacity-30 group-hover:opacity-100 transition-opacity">
+                  {item.type === 'Série' ? <Layers size={24} /> : null}
                 </div>
               </div>
 
@@ -281,7 +283,7 @@ export default function Library() {
                 </div>
                 
                 <div className="flex items-center gap-3 px-8 py-3.5 bg-yellow-500 text-zinc-950 font-bold text-xs uppercase tracking-widest rounded-2xl group-hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10">
-                  Abrir Conteúdo
+                  Abrir {item.type === 'Série' ? 'Série' : 'Conteúdo'}
                   <ChevronRight size={16} />
                 </div>
               </div>
