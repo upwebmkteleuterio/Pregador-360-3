@@ -1,4 +1,4 @@
-import { GoogleGenAI, SchemaType } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { ItemType } from "../store/useStore";
 import { SERMON_SYSTEM_INSTRUCTION } from "../constants/sermonFormat";
 import { databaseService } from "./databaseService";
@@ -35,17 +35,17 @@ export const generateAIContent = async (
 
   if (type === 'Série') {
     const seriesSchema = {
-      type: SchemaType.OBJECT,
+      type: "object",
       properties: {
-        title: { type: SchemaType.STRING },
-        topic: { type: SchemaType.STRING },
+        title: { type: "string" },
+        topic: { type: "string" },
         episodes: {
-          type: SchemaType.ARRAY,
+          type: "array",
           items: {
-            type: SchemaType.OBJECT,
+            type: "object",
             properties: {
-              title: { type: SchemaType.STRING, description: "Deve seguir o formato [Ep. X] - Título" },
-              content: { type: SchemaType.STRING, description: "Conteúdo completo do sermão do episódio" }
+              title: { type: "string", description: "Deve seguir o formato [Ep. X] - Título" },
+              content: { type: "string", description: "Conteúdo completo do sermão do episódio" }
             },
             required: ["title", "content"]
           }
@@ -77,11 +77,11 @@ export const generateAIContent = async (
 
   } else if (type === 'Sermão') {
     const sermonSchema = {
-      type: SchemaType.OBJECT,
+      type: "object",
       properties: {
-        title: { type: SchemaType.STRING },
-        topic: { type: SchemaType.STRING },
-        content: { type: SchemaType.STRING }
+        title: { type: "string" },
+        topic: { type: "string" },
+        content: { type: "string" }
       },
       required: ["title", "topic", "content"]
     };
@@ -103,11 +103,11 @@ export const generateAIContent = async (
   } else {
     // Illustration
     const illustrationSchema = {
-      type: SchemaType.OBJECT,
+      type: "object",
       properties: {
-        title: { type: SchemaType.STRING },
-        topic: { type: SchemaType.STRING },
-        content: { type: SchemaType.STRING }
+        title: { type: "string" },
+        topic: { type: "string" },
+        content: { type: "string" }
       },
       required: ["title", "topic", "content"]
     };
