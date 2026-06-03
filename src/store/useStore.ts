@@ -22,7 +22,8 @@ export interface ContentItem {
   tags: string[];
   createdAt: string;
   versions: ContentVersion[];
-  episodesCount?: number; // Opcional para séries
+  episodesCount?: number; 
+  parentSeriesId?: string; // ID da série pai (se for um episódio)
 }
 
 export interface Note {

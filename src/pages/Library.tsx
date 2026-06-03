@@ -102,6 +102,14 @@ export default function Library() {
     });
   }, [baseItems, library.selectedTag]);
 
+  const handleOpenItem = (item: any) => {
+    if (item.type === 'Série') {
+      navigate(`/series/${item.id}`);
+    } else {
+      navigate(`/view/${item.id}`);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-32 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
@@ -202,7 +210,7 @@ export default function Library() {
           filteredItems.map((item) => (
             <div 
               key={item.id}
-              onClick={() => navigate(`/view/${item.id}`)}
+              onClick={() => handleOpenItem(item)}
               className="bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-[2rem] p-6 space-y-5 relative overflow-hidden group hover:bg-[var(--bg-card)]/80 hover:border-yellow-500/20 transition-all active:scale-[0.99] cursor-pointer"
             >
               <div 
@@ -215,7 +223,10 @@ export default function Library() {
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-bold tracking-[0.15em] text-[var(--text-secondary)] uppercase px-2 py-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg">
+                    <span className={cn(
+                      "text-[9px] font-bold tracking-[0.15em] uppercase px-2 py-1 bg-[var(--bg-main)] border rounded-lg",
+                      item.type === 'Série' ? "text-violet-500 border-violet-500/20" : "text-[var(--text-secondary)] border-[var(--border-color)]"
+                    )}>
                       {item.type}
                     </span>
                     <span className="text-[10px] font-medium text-[var(--text-secondary)]">
@@ -230,7 +241,7 @@ export default function Library() {
                   </p>
                 </div>
                 <div className="text-[var(--text-secondary)] opacity-30 group-hover:opacity-100 transition-opacity">
-                  {item.type === 'Série' ? <Layers size={24} /> : null}
+                  {item.type === 'Série' ? <Layers size={24} className="text-violet-500" /> : null}
                 </div>
               </div>
 
@@ -282,7 +293,12 @@ export default function Library() {
                   </button>
                 </div>
                 
-                <div className="flex items-center gap-3 px-8 py-3.5 bg-yellow-500 text-zinc-950 font-bold text-xs uppercase tracking-widest rounded-2xl group-hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10">
+                <div className={cn(
+                  "flex items-center gap-3 px-8 py-3.5 font-bold text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg",
+                  item.type === 'Série' 
+                    ? "bg-violet-600 text-white shadow-violet-500/20 hover:bg-violet-500" 
+                    : "bg-yellow-500 text-zinc-950 shadow-yellow-500/10 hover:bg-yellow-400"
+                )}>
                   Abrir {item.type === 'Série' ? 'Série' : 'Conteúdo'}
                   <ChevronRight size={16} />
                 </div>

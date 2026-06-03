@@ -3,6 +3,7 @@ import ScrollToTop from './components/ScrollToTop';
 import { Layout } from './components/Layout';
 import Generate from './pages/Generate';
 import ContentView from './pages/ContentView';
+import SeriesView from './pages/SeriesView';
 import Library from './pages/Library';
 import Editor from './pages/Editor';
 import Tags from './pages/Tags';
@@ -62,6 +63,7 @@ function AppRoutes() {
         <Route path="/notes" element={<NotesList />} />
         <Route path="/notes/edit/:id" element={<NoteEditor />} />
         <Route path="/view/:id" element={<ContentView />} />
+        <Route path="/series/:id" element={<SeriesView />} />
         <Route path="/preach/:id" element={<PreachingMode />} />
         <Route path="/plans" element={<ChoosePlan />} />
         <Route path="/profile" element={<Profile />} />
