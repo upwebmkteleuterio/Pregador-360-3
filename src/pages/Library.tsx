@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+Episódios).">
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
-import { Search, Plus, Tag as TagIcon, Trash2, Copy, ChevronRight } from 'lucide-react';
+import { Search, Plus, Tag as TagIcon, Trash2, Copy, ChevronRight, ChevronLeft, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Library() {
@@ -15,6 +16,8 @@ export default function Library() {
     tags: allTags 
   } = useStore();
 
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDown = useRef(false);
   const startX = useRef(0);
@@ -23,7 +26,7 @@ export default function Library() {
   // Limpa filtros específicos ao sair da tela
   useEffect(() => {
     return () => {
-      setLibraryState({ searchQuery: '', selectedTag: null });
+      setLibraryState({ searchQuery: '', selectedTag: null, filter: 'Sermão' });
     };
   }, [setLibraryState]);
 
@@ -55,55 +58,55 @@ export default function Library() {
   };
 
   // 1. Filtragem primária (Busca + Tipo de Item)
-  // Este é o conjunto de dados base sobre o qual as tags serão extraídas
   const baseItems = useMemo(() => {
     if (!items) return [];
+    
+    // Se estivermos vendo os episódios de uma série específica
+    if (library.filter === 'Série' && selectedSeriesId) {
+      const series = items.find(i => i.id === selectedSeriesId);
+      if (!series) return [];
+      
+      // Filtra sermões que pertencem a esta série (baseado no tópico/título da série)
+      return items.filter(item => 
+        item.type === 'Sermão' && 
+        (item.topic === series.title || item.title.includes(series.title))
+      );
+    }
+
     return items.filter(item => {
       const searchLower = library.searchQuery.toLowerCase().trim();
       const matchesSearch = !searchLower || 
                           (item.title && item.title.toLowerCase().includes(searchLower)) ||
                           (item.topic && item.topic.toLowerCase().includes(searchLower));
       
-      const matchesFilter = library.filter === 'Todos' || item.type === library.filter;
+      const matchesFilter = item.type === library.filter;
       
       return matchesSearch && matchesFilter;
     });
-  }, [items, library.searchQuery, library.filter]);
+  }, [items, library.searchQuery, library.filter, selectedSeriesId]);
 
-  // 2. Extração Dinâmica de Tags Vinculadas
-  // Mostra apenas as tags que existem nos itens visíveis (baseItems)
+  // 2. Extração Dinâmica de Tags
   const availableTags = useMemo(() => {
     const tagNamesFound = new Set<string>();
-    
     baseItems.forEach(item => {
       if (item.tags && Array.isArray(item.tags)) {
-        item.tags.forEach(t => {
-          if (t) tagNamesFound.add(t.trim());
-        });
+        item.tags.forEach(t => { if (t) tagNamesFound.add(t.trim()); });
       }
     });
-
-    // Mapeia os nomes encontrados para as configurações de cores do sistema
     return Array.from(tagNamesFound).map(name => {
       const config = allTags.find(t => t.name.toLowerCase().trim() === name.toLowerCase().trim());
-      return {
-        name: name,
-        color: config?.color || '#71717a',
-        id: config?.id || `temp-${name}`
-      };
+      return { name, color: config?.color || '#71717a', id: config?.id || `temp-${name}` };
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [baseItems, allTags]);
 
-  // 3. Filtragem final (pela Tag selecionada)
+  // 3. Filtragem final (por Tag)
   const filteredItems = useMemo(() => {
     if (!library.selectedTag) return baseItems;
-    
     const selected = library.selectedTag.toLowerCase().trim();
-    return baseItems.filter(item => {
-      if (!item.tags || !Array.isArray(item.tags)) return false;
-      return item.tags.some(t => t && t.toLowerCase().trim() === selected);
-    });
+    return baseItems.filter(item => item.tags?.some(t => t.toLowerCase().trim() === selected));
   }, [baseItems, library.selectedTag]);
+
+  const selectedSeries = items.find(i => i.id === selectedSeriesId);
 
   return (
     <div className="space-y-8 pb-32 animate-in fade-in duration-500">
@@ -131,25 +134,44 @@ export default function Library() {
       </div>
 
       <div className="space-y-6">
-        {/* Abas de Categorias */}
-        <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50 max-w-md">
-          {(['Todos', 'Sermão', 'Ilustração'] as const).map((filter) => (
+        {/* Abas de Categorias - Atualizadas */}
+        <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50">
+          {(['Sermão', 'Série', 'Ilustração'] as const).map((filter) => (
             <button
               key={filter}
-              onClick={() => setLibraryState({ filter, selectedTag: null })}
+              onClick={() => {
+                setLibraryState({ filter, selectedTag: null });
+                setSelectedSeriesId(null);
+              }}
               className={cn(
-                "flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
+                "flex-1 py-3 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all",
                 library.filter === filter 
                   ? "bg-[var(--bg-main)] text-[var(--text-primary)] shadow-md" 
                   : "text-[var(--text-secondary)] hover:text-yellow-500"
               )}
             >
-              {filter === 'Todos' ? 'Todos' : filter === 'Sermão' ? 'Sermões' : 'Ilustrações'}
+              {filter === 'Sermão' ? 'Sermões' : filter === 'Série' ? 'Séries' : 'Ilustrações'}
             </button>
           ))}
         </div>
 
-        {/* Filtro de Tags Horizontal Dinâmico */}
+        {/* Header de Navegação para Episódios */}
+        {library.filter === 'Série' && selectedSeriesId && (
+          <div className="flex items-center gap-4 bg-yellow-500/5 border border-yellow-500/10 p-4 rounded-2xl animate-in slide-in-from-left-4">
+            <button 
+              onClick={() => setSelectedSeriesId(null)}
+              className="p-2 bg-yellow-500 text-zinc-950 rounded-xl active:scale-90 transition-transform"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div>
+              <span className="text-[9px] font-bold text-yellow-500 uppercase tracking-widest">Série Selecionada</span>
+              <h2 className="text-lg font-bold text-[var(--text-primary)] leading-tight">{selectedSeries?.title}</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Filtro de Tags */}
         <div className="relative">
           <div 
             ref={scrollRef}
@@ -184,13 +206,7 @@ export default function Library() {
                       : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-color)] hover:border-yellow-500/30"
                   )}
                 >
-                  <div 
-                    className={cn(
-                      "h-2 w-2 rounded-full",
-                      isActive ? "bg-zinc-950" : ""
-                    )} 
-                    style={{ backgroundColor: isActive ? undefined : tag.color }} 
-                  />
+                  <div className={cn("h-2 w-2 rounded-full", isActive ? "bg-zinc-950" : "")} style={{ backgroundColor: isActive ? undefined : tag.color }} />
                   {tag.name}
                 </button>
               );
@@ -205,18 +221,27 @@ export default function Library() {
           filteredItems.map((item) => (
             <div 
               key={item.id}
-              onClick={() => navigate(`/view/${item.id}`)}
+              onClick={() => {
+                if (item.type === 'Série' && !selectedSeriesId) {
+                  setSelectedSeriesId(item.id);
+                } else {
+                  navigate(`/view/${item.id}`);
+                }
+              }}
               className="bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-[2rem] p-6 space-y-5 relative overflow-hidden group hover:bg-[var(--bg-card)]/80 hover:border-yellow-500/20 transition-all active:scale-[0.99] cursor-pointer"
             >
               <div 
                 className="absolute left-0 top-0 bottom-0 w-1.5 transition-colors" 
-                style={{ backgroundColor: item.type === 'Sermão' ? '#EAB308' : '#3B82F6' }}
+                style={{ backgroundColor: item.type === 'Sermão' ? '#EAB308' : item.type === 'Série' ? '#A855F7' : '#3B82F6' }}
               />
               
               <div className="flex justify-between items-start">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-bold tracking-[0.15em] text-[var(--text-secondary)] uppercase px-2 py-1 bg-[var(--bg-main)] border border-[var(--border-color)] rounded-lg">
+                    <span className={cn(
+                      "text-[9px] font-bold tracking-[0.15em] uppercase px-2 py-1 border rounded-lg",
+                      item.type === 'Série' ? "bg-purple-500/10 border-purple-500/20 text-purple-400" : "bg-[var(--bg-main)] border-[var(--border-color)] text-[var(--text-secondary)]"
+                    )}>
                       {item.type}
                     </span>
                     <span className="text-[10px] font-medium text-[var(--text-secondary)]">
@@ -227,61 +252,29 @@ export default function Library() {
                     {item.title}
                   </h3>
                   <p className="text-xs text-[var(--text-secondary)] line-clamp-1 opacity-70">
-                    {item.topic}
+                    {item.type === 'Série' ? `${item.episodesCount || 0} Episódios planejados` : item.topic}
                   </p>
                 </div>
               </div>
 
-              {item.tags && item.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {item.tags.map(tagName => {
-                    const tagConfig = allTags.find(t => t.name.toLowerCase().trim() === tagName.toLowerCase().trim());
-                    return (
-                      <div 
-                        key={tagName}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-main)] rounded-xl text-[9px] font-bold text-[var(--text-secondary)] border border-[var(--border-color)]"
-                      >
-                        <TagIcon size={10} style={{ color: tagConfig?.color || '#71717a' }} />
-                        <span className="uppercase tracking-wider">{tagName}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
               <div className="flex items-center justify-between pt-5 border-t border-[var(--border-color)]/50">
                 <div className="flex items-center gap-4">
                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setModalState('deleteConfirmOpen', true, item.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setModalState('deleteConfirmOpen', true, item.id); }}
                     className="p-2.5 text-[var(--text-secondary)] hover:text-red-500 transition-colors"
                   >
                     <Trash2 size={20} />
                   </button>
                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      duplicateItem(item.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); duplicateItem(item.id); }}
                     className="p-2.5 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
                   >
                     <Copy size={20} />
                   </button>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setModalState('tagModalOpen', true, item.id);
-                    }}
-                    className="p-2.5 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
-                  >
-                    <TagIcon size={20} />
-                  </button>
                 </div>
                 
                 <div className="flex items-center gap-3 px-8 py-3.5 bg-yellow-500 text-zinc-950 font-bold text-xs uppercase tracking-widest rounded-2xl group-hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/10">
-                  Abrir Conteúdo
+                  {item.type === 'Série' && !selectedSeriesId ? 'Ver Episódios' : 'Abrir Conteúdo'}
                   <ChevronRight size={16} />
                 </div>
               </div>
@@ -289,20 +282,17 @@ export default function Library() {
           ))
         ) : (
           <div className="text-center py-24 opacity-30">
-            <Search size={48} className="mx-auto mb-4 text-[var(--text-secondary)]" />
-            <p className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">Nenhum item encontrado</p>
+            {library.filter === 'Série' ? <Layers size={48} className="mx-auto mb-4 text-[var(--text-secondary)]" /> : <Search size={48} className="mx-auto mb-4 text-[var(--text-secondary)]" />}
+            <p className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+              {library.filter === 'Série' ? 'Nenhuma série encontrada' : 'Nenhum item encontrado'}
+            </p>
           </div>
         )}
       </div>
 
       <style>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </div>
   );
