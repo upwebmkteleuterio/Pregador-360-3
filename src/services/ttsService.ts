@@ -1,8 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI(process.env.GEMINI_API_KEY || "");
-
 export async function generateSpeech(text: string, voiceName: 'Puck' | 'Charon' | 'Kore' | 'Fenrir' | 'Zephyr' = 'Kore'): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("A chave GEMINI_API_KEY não foi configurada para o serviço de áudio.");
+  }
+
+  const ai = new GoogleGenAI(apiKey);
   const genModel = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
   
   const response = await genModel.generateContent({

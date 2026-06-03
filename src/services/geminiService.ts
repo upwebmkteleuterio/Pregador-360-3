@@ -3,8 +3,6 @@ import { ItemType } from "../store/useStore";
 import { SERMON_SYSTEM_INSTRUCTION } from "../constants/sermonFormat";
 import { databaseService } from "./databaseService";
 
-const ai = new GoogleGenAI(process.env.GEMINI_API_KEY || "");
-
 export interface GeneratedContent {
   title: string;
   topic: string;
@@ -19,6 +17,11 @@ export const generateAIContent = async (
   episodesCount: number = 4
 ): Promise<GeneratedContent & { remainingCredits?: number }> => {
   const modelName = "gemini-2.0-flash";
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("A chave GEMINI_API_KEY não foi configurada no ambiente.");
+  }
 
   // Verificação de crédito segura via servidor
   const creditRes = await databaseService.deductCredit(`Geração de ${type}: ${topic.substring(0, 30)}...`);
@@ -27,7 +30,8 @@ export const generateAIContent = async (
     throw new Error("INSUFFICIENT_CREDITS");
   }
 
-  // Instancia o modelo corretamente de acordo com o SDK
+  // Instancia o SDK e o modelo apenas quando necessário
+  const ai = new GoogleGenAI(apiKey);
   const genModel = ai.getGenerativeModel({ 
     model: modelName,
     systemInstruction: type === 'Sermão' || type === 'Série' ? SERMON_SYSTEM_INSTRUCTION : "Você é um especialista em retórica e homilética cristã."
