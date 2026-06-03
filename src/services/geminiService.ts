@@ -18,7 +18,7 @@ export const generateAIContent = async (
   tone: string,
   episodesCount: number = 4
 ): Promise<GeneratedContent & { remainingCredits?: number }> => {
-  const model = "gemini-1.5-flash"; // Alterado para a versão estável
+  const model = "gemini-2.0-flash";
 
   // Verificação de crédito segura via servidor
   const creditRes = await databaseService.deductCredit(`Geração de ${type}: ${topic.substring(0, 30)}...`);
@@ -60,18 +60,17 @@ export const generateAIContent = async (
 
     Gere exatamente ${episodesCount} episódios.`;
 
-    const response = await ai.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model,
-      systemInstruction: SERMON_SYSTEM_INSTRUCTION
-    }).generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
         responseSchema: seriesSchema,
+        systemInstruction: SERMON_SYSTEM_INSTRUCTION
       }
     });
 
-    const result = JSON.parse(response.response.text());
+    const result = JSON.parse(response.text);
     return { ...result, remainingCredits: creditRes.remaining };
 
   } else if (type === 'Sermão') {
@@ -89,20 +88,20 @@ export const generateAIContent = async (
     TEMA/VERSÍCULO BASE: ${topic}
     TOM: ${tone}`;
 
-    const response = await ai.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model,
-      systemInstruction: SERMON_SYSTEM_INSTRUCTION
-    }).generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
         responseSchema: sermonSchema,
+        systemInstruction: SERMON_SYSTEM_INSTRUCTION
       }
     });
 
-    const result = JSON.parse(response.response.text()) as GeneratedContent;
+    const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
   } else {
+    // Illustration
     const illustrationSchema = {
       type: Type.OBJECT,
       properties: {
@@ -117,18 +116,17 @@ export const generateAIContent = async (
     TEMA: ${topic}
     TOM: ${tone}`;
 
-    const response = await ai.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model,
-      systemInstruction: "Você é um especialista em retórica e homilética cristã."
-    }).generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
         responseSchema: illustrationSchema,
+        systemInstruction: "Você é um especialista em retórica e homilética cristã."
       }
     });
 
-    const result = JSON.parse(response.response.text()) as GeneratedContent;
+    const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
   }
 };

@@ -15,6 +15,7 @@ export async function consultBibleAi(query: string): Promise<BibleAiResult> {
     throw new Error("Configuração da API não encontrada.");
   }
 
+  // Verificação de crédito agora é feita internamente pelo banco usando a sessão do usuário
   const creditRes = await databaseService.deductCredit(`Pesquisa Bíblica: ${query.substring(0, 30)}...`);
   
   if (!creditRes.success) {
@@ -22,7 +23,6 @@ export async function consultBibleAi(query: string): Promise<BibleAiResult> {
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" }); // Corrigido para modelo estável
   
   const prompt = `Você é um assistente bíblico especialista. 
   O usuário está buscando informações sobre: "${query}". 
@@ -37,12 +37,16 @@ export async function consultBibleAi(query: string): Promise<BibleAiResult> {
   (Texto rico sobre o tema aqui...)
   :::SYSTEM_DATA:::
   [V]João 3:16 - Porque Deus amou o mundo...[/V]
-  [T]O Amor de Deus[/T]`;
+  [T]O Amor de Deus[/T]
+  
+  Importante: Nada após o marcador :::SYSTEM_DATA::: será visto pelo usuário, então não escreva textos explicativos lá, apenas as tags.`;
 
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  const content = response.text();
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt
+  });
 
+  const content = response.text;
   if (!content) throw new Error("A IA não retornou conteúdo.");
 
   const parsed = parseBibleAiResponse(content);
@@ -66,6 +70,15 @@ function parseBibleAiResponse(content: string): Omit<BibleAiResult, 'remainingCr
   }
   while ((match = verseRegex.exec(systemData)) !== null) {
     verses.push(match[1].trim());
+  }
+
+  if (themes.length === 0 && verses.length === 0) {
+    while ((match = themeRegex.exec(displayContent)) !== null) {
+      themes.push(match[1].trim());
+    }
+    while ((match = verseRegex.exec(displayContent)) !== null) {
+      verses.push(match[1].trim());
+    }
   }
 
   const cleanDisplayContent = displayContent
