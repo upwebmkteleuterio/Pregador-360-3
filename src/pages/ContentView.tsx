@@ -293,6 +293,14 @@ export default function ContentView() {
     return () => window.removeEventListener('app-export', handleExportEvent);
   }, [item]);
 
+  const handleBack = () => {
+    if (item.parentSeriesId) {
+      navigate(`/series/${item.parentSeriesId}`);
+    } else {
+      navigate('/library');
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
       {/* Toast Notification */}
@@ -312,7 +320,7 @@ export default function ContentView() {
 
       <div className="flex justify-between items-start">
         <button 
-          onClick={() => navigate('/library')}
+          onClick={handleBack}
           className="p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-colors rounded-xl"
         >
           <ChevronLeft size={20} />
