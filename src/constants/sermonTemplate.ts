@@ -26,32 +26,32 @@ APLICAÇÃO:
 ## DESENVOLVIMENTO
 
 ### 1. (Título do ponto)
-•  EXPLICAÇÃO: (Conteúdo detalhado e profundo)
-•  REFERÊNCIAS CRUZADAS BÍBLICAS: [ dois ou tres textos bíblicos que concordam com o ponto citado]
-•  APLICAÇÃO: (Conteúdo detalhado e profundo)
-•  ILUSTRAÇÃO: [história, real ou fictícia, tirada de clássicos de ilustrações para sermões , anedotas ou coisas comuns da vida, com uma história moral ligada ao ponto citado - seja extenso e detalhado]
-•  FRASE IMPACTANTE: (Frase de pensador cristão ou autoral)
+EXPLICAÇÃO: (Conteúdo detalhado e profundo)
+REFERÊNCIAS CRUZADAS BÍBLICAS: [ dois ou tres textos bíblicos que concordam com o ponto citado]
+APLICAÇÃO: (Conteúdo detalhado e profundo)
+ILUSTRAÇÃO: [história, real ou fictícia, tirada de clássicos de ilustrações para sermões , anedotas ou coisas comuns da vida, com uma história moral ligada ao ponto citado - seja extenso e detalhado]
+FRASE IMPACTANTE: (Frase de pensador cristão ou autoral)
 
 ### 2. (Título do ponto)
-•  EXPLICAÇÃO: (Conteúdo detalhado e profundo)
-•  REFERÊNCIAS CRUZADAS BÍBLICAS: [ dois ou tres textos bíblicos que concordam com o ponto citado]
-•  APLICAÇÃO: (Conteúdo detalhado e profundo)
-•  ILUSTRAÇÃO: [história, real ou fictícia, tirada de clássicos de ilustrações para sermões , anedotas ou coisas comuns da vida, com uma história moral ligada ao ponto citado - seja extenso e detalhado]
-•  FRASE IMPACTANTE: (Frase de pensador cristão ou autoral)
+EXPLICAÇÃO: (Conteúdo detalhado e profundo)
+REFERÊNCIAS CRUZADAS BÍBLICAS: [ dois ou tres textos bíblicos que concordam com o ponto citado]
+APLICAÇÃO: (Conteúdo detalhado e profundo)
+ILUSTRAÇÃO: [história, real ou fictícia, tirada de clássicos de ilustrações para sermões , anedotas ou coisas comuns da vida, com uma história moral ligada ao ponto citado - seja extenso e detalhado]
+FRASE IMPACTANTE: (Frase de pensador cristão ou autoral)
 
 ### 3. (Título do ponto)
-•  EXPLICAÇÃO: (Conteúdo detalhado e profundo)
-•  REFERÊNCIAS CRUZADAS BÍBLICAS: [ dois ou tres textos bíblicos que concordam com o ponto citado]
-•  APLICAÇÃO: (Conteúdo detalhado e profundo)
-•  ILUSTRAÇÃO: [história, real ou fictícia, tirada de clássicos de ilustrações para sermões , anedotas ou coisas comuns da vida, com uma história moral ligada ao ponto citado - seja extenso e detalhado]
-•  FRASE IMPACTANTE: (Frase de pensador cristão ou autoral)
+EXPLICAÇÃO: (Conteúdo detalhado e profundo)
+REFERÊNCIAS CRUZADAS BÍBLICAS: [ dois ou tres textos bíblicos que concordam com o ponto citado]
+APLICAÇÃO: (Conteúdo detalhado e profundo)
+ILUSTRAÇÃO: [história, real ou fictícia, tirada de clássicos de ilustrações para sermões , anedotas ou coisas comuns da vida, com uma história moral ligada ao ponto citado - seja extenso e detalhado]
+FRASE IMPACTANTE: (Frase de pensador cristão ou autoral)
 
 ### 4. (Título do ponto)
-•  EXPLICAÇÃO: (Conteúdo detalhado e profundo)
-•  REFERÊNCIAS CRUZADAS BÍBLICAS: [ dois ou tres textos bíblicos que concordam com o ponto citado]
-•  APLICAÇÃO: (Conteúdo detalhado e profundo)
-•  ILUSTRAÇÃO: [história, real ou fictícia, tirada de clássicos de ilustrações para sermões , anedotas ou coisas comuns da vida, com uma história moral ligada ao ponto citado - seja extenso e detalhado]
-•  FRASE IMPACTANTE: (Frase de pensador cristão ou autoral)
+EXPLICAÇÃO: (Conteúdo detalhado e profundo)
+REFERÊNCIAS CRUZADAS BÍBLICAS: [ dois ou tres textos bíblicos que concordam com o ponto citado]
+APLICAÇÃO: (Conteúdo detalhado e profundo)
+ILUSTRAÇÃO: [história, real ou fictícia, tirada de clássicos de ilustrações para sermões , anedotas ou coisas comuns da vida, com uma história moral ligada ao ponto citado - seja extenso e detalhado]
+FRASE IMPACTANTE: (Frase de pensador cristão ou autoral)
 
 --------------------------------------------------
 
