@@ -158,8 +158,8 @@ export default function Generate() {
 
   const types: { label: ItemType; icon: any }[] = [
     { label: 'Sermão', icon: FileText },
-    { label: 'Ilustração', icon: Lightbulb },
     { label: 'Série', icon: Layers },
+    { label: 'Ilustração', icon: Lightbulb },
   ];
 
   const progressPercentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
@@ -178,7 +178,7 @@ export default function Generate() {
           className="absolute inset-y-1 bg-[var(--border-color)] rounded-lg shadow-lg z-0 flex items-center justify-center overflow-hidden"
           initial={false}
           animate={{
-            x: generatorForm.type === 'Sermão' ? 0 : generatorForm.type === 'Ilustração' ? '100%' : '200%',
+            x: generatorForm.type === 'Sermão' ? 0 : generatorForm.type === 'Série' ? '100%' : '200%',
             left: 4,
             right: 4,
             width: 'calc(33.33% - 4px)'
