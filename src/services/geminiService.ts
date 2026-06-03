@@ -63,6 +63,7 @@ ${SERMON_STRUCTURE_TEMPLATE}
 
 3. TÍTULOS: O título de cada episódio deve obrigatoriamente começar com "[Ep. X] - ", onde X é o número do episódio.
 4. PROFUNDIDADE: Não economize palavras. Cada sermão deve ser rico, detalhado e profissional, preenchendo todas as seções do modelo.
+5. FORMATAÇÃO CRÍTICA: Você DEVE SEMPRE manter o caractere "•" no início das linhas de sub-tópicos (Explicação, Aplicação, Ilustração, etc) exatamente como no modelo. NUNCA remova a bolinha.
 
 Idioma: Português (Brasil).`;
 
@@ -101,7 +102,8 @@ ${SERMON_STRUCTURE_TEMPLATE}
 
 2. GRAMÁTICA E CAPITALIZAÇÃO: Use escrita padrão com gramática rigorosamente correta. Inicie OBRIGATORIAMENTE cada frase com LETRA MAIÚSCULA após pontos finais.
 3. ESPAÇAMENTO: Você DEVE colocar DUAS quebras de linha (\\n\\n) após cada título (##) e após cada separador (---).
-4. SEM REPETIÇÃO: NÃO inclua o título do sermão ou o tópico dentro do campo 'content'. Comece direto no Versículo Base.
+4. FORMATAÇÃO DOS PONTOS: Você DEVE manter o caractere de bolinha "•" antes de cada rótulo (Ex: • EXPLICAÇÃO, • ILUSTRAÇÃO). NUNCA envie o rótulo sem a bolinha antes dele.
+5. SEM REPETIÇÃO: NÃO inclua o título do sermão ou o tópico dentro do campo 'content'. Comece direto no Versículo Base.
 
 Idioma: Português (Brasil).`;
 
