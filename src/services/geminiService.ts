@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ItemType } from "../store/useStore";
 import { SERMON_SYSTEM_INSTRUCTION } from "../constants/sermonFormat";
+import { SERMON_STRUCTURE_TEMPLATE } from "../constants/sermonTemplate";
 import { databaseService } from "./databaseService";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -56,9 +57,12 @@ TOM DA SÉRIE: ${tone}
 
 REGRAS PARA A SÉRIE:
 1. UNIDADE: Todos os episódios devem estar conectados ao tema central, mas abordando ângulos diferentes e progressivos.
-2. ESTRUTURA DOS EPISÓDIOS: Cada sermão dentro do campo 'content' de cada episódio deve seguir a estrutura técnica completa: Texto Base, Introdução, Contexto, Análise da Palavra Original, Desenvolvimento (4 pontos com Ilustração e Frase), Aplicação e Apelo.
+2. ESTRUTURA DOS EPISÓDIOS: Cada sermão dentro do campo 'content' de cada episódio deve seguir OBRIGATORIAMENTE o modelo abaixo:
+
+${SERMON_STRUCTURE_TEMPLATE}
+
 3. TÍTULOS: O título de cada episódio deve obrigatoriamente começar com "[Ep. X] - ", onde X é o número do episódio.
-4. PROFUNDIDADE: Não economize palavras. Cada sermão deve ser rico e profissional.
+4. PROFUNDIDADE: Não economize palavras. Cada sermão deve ser rico, detalhado e profissional, preenchendo todas as seções do modelo.
 
 Idioma: Português (Brasil).`;
 
@@ -86,25 +90,18 @@ Idioma: Português (Brasil).`;
       required: ["title", "topic", "content"]
     };
 
-    const prompt = `Gere um SERMÃO bíblico completo seguindo a estrutura técnica abaixo.
+    const prompt = `Gere um SERMÃO bíblico completo seguindo a estrutura técnica rigorosa do modelo fornecido abaixo.
 
 TEMA/VERSÍCULO BASE: ${topic}
 TOM: ${tone}
 
 REGRAS DE OURO (CRÍTICO):
-1. GRAMÁTICA E CAPITALIZAÇÃO: Use escrita padrão com gramática rigorosamente correta. Inicie OBRIGATORIAMENTE cada frase com LETRA MAIÚSCULA após pontos finais.
-2. ESPAÇAMENTO: Você DEVE colocar DUAS quebras de linha (\\n\\n) após cada título (##) e após cada separador (---).
-3. SEM REPETIÇÃO: NÃO inclua o título do sermão ou o tópico dentro do campo 'content'. Comece direto no Versículo Base.
+1. MODELO OBRIGATÓRIO: Você deve preencher cada seção deste modelo com profundidade teológica:
+${SERMON_STRUCTURE_TEMPLATE}
 
-ESTRUTURA OBRIGATÓRIA:
-> [Texto Integral do Versículo Base]
----
-## INTRODUÇÃO
-...
----
-## CONTEXTO HISTÓRICO...
-...
-(Segue estrutura padrão de 4 pontos)
+2. GRAMÁTICA E CAPITALIZAÇÃO: Use escrita padrão com gramática rigorosamente correta. Inicie OBRIGATORIAMENTE cada frase com LETRA MAIÚSCULA após pontos finais.
+3. ESPAÇAMENTO: Você DEVE colocar DUAS quebras de linha (\\n\\n) após cada título (##) e após cada separador (---).
+4. SEM REPETIÇÃO: NÃO inclua o título do sermão ou o tópico dentro do campo 'content'. Comece direto no Versículo Base.
 
 Idioma: Português (Brasil).`;
 
