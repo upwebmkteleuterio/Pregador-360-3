@@ -39,19 +39,19 @@ export default function SeriesView() {
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <Layers size={14} className="text-violet-500" />
-            <span className="text-[10px] font-bold text-violet-500 uppercase tracking-widest">Série</span>
+            <Layers size={14} className="text-yellow-500" />
+            <span className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest">Série</span>
           </div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)] leading-tight">{series.title}</h1>
         </div>
       </div>
 
-      <div className="p-6 bg-violet-500/5 border border-violet-500/10 rounded-3xl">
+      <div className="p-6 bg-yellow-500/5 border border-yellow-500/10 rounded-3xl">
         <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
           <span className="text-[var(--text-primary)] font-bold">Tema Central:</span> {series.topic}
         </p>
         <div className="flex items-center gap-2 mt-3">
-          <div className="px-3 py-1 bg-violet-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg">
+          <div className="px-3 py-1 bg-yellow-500 text-zinc-950 text-[10px] font-bold uppercase tracking-widest rounded-lg">
             {episodes.length} Episódios
           </div>
           <div className="px-3 py-1 bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-secondary)] text-[10px] font-bold uppercase tracking-widest rounded-lg">

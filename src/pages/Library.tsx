@@ -216,7 +216,7 @@ export default function Library() {
               <div 
                 className="absolute left-0 top-0 bottom-0 w-1.5 transition-colors" 
                 style={{ 
-                  backgroundColor: item.type === 'Sermão' ? '#EAB308' : item.type === 'Série' ? '#8B5CF6' : '#3B82F6' 
+                  backgroundColor: '#EAB308' // Padronizado para Amarelo
                 }}
               />
               
@@ -225,7 +225,7 @@ export default function Library() {
                   <div className="flex items-center gap-2">
                     <span className={cn(
                       "text-[9px] font-bold tracking-[0.15em] uppercase px-2 py-1 bg-[var(--bg-main)] border rounded-lg",
-                      item.type === 'Série' ? "text-violet-500 border-violet-500/20" : "text-[var(--text-secondary)] border-[var(--border-color)]"
+                      item.type === 'Série' ? "text-yellow-500 border-yellow-500/20" : "text-[var(--text-secondary)] border-[var(--border-color)]"
                     )}>
                       {item.type}
                     </span>
@@ -241,14 +241,14 @@ export default function Library() {
                   </p>
                 </div>
                 <div className="text-[var(--text-secondary)] opacity-30 group-hover:opacity-100 transition-opacity">
-                  {item.type === 'Série' ? <Layers size={24} className="text-violet-500" /> : null}
+                  {item.type === 'Série' ? <Layers size={24} className="text-yellow-500" /> : null}
                 </div>
               </div>
 
               {item.tags && item.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {item.tags.map(tagName => {
-                    const tagConfig = allTags.find(t => t.name.toLowerCase().trim() === tagName.toLowerCase().trim());
+                    const tagConfig = allTags.find(t => t.name.toLowerCase().trim() === name.toLowerCase().trim());
                     return (
                       <div 
                         key={tagName}
@@ -295,9 +295,7 @@ export default function Library() {
                 
                 <div className={cn(
                   "flex items-center gap-3 px-8 py-3.5 font-bold text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg",
-                  item.type === 'Série' 
-                    ? "bg-violet-600 text-white shadow-violet-500/20 hover:bg-violet-500" 
-                    : "bg-yellow-500 text-zinc-950 shadow-yellow-500/10 hover:bg-yellow-400"
+                  "bg-yellow-500 text-zinc-950 shadow-yellow-500/10 hover:bg-yellow-400"
                 )}>
                   Abrir {item.type === 'Série' ? 'Série' : 'Conteúdo'}
                   <ChevronRight size={16} />
