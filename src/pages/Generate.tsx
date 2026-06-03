@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStore, MessageTone, ItemType, ContentItem } from '@/src/store/useStore';
+import { useStore, MessageTone, ItemType } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
 import { Sparkles, Mic, FileText, Lightbulb, Loader2, BookOpen, Heart, Flame, MessageSquareWarning, Wind, GraduationCap, Users, Layers } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -34,100 +34,40 @@ export default function Generate() {
       const data = await generateAIContent(
         generatorForm.type,
         generatorForm.topic,
-        generatorForm.tone,
-        generatorForm.episodes
+        generatorForm.tone
       );
 
-      if (data.remainingCredits !== undefined) {
-        setSubscriptionState({ credits: data.remainingCredits });
-      }
+      const contentId = await databaseService.saveNewContent({
+        type: generatorForm.type,
+        title: data.title,
+        topic: data.topic || generatorForm.topic,
+        tone: generatorForm.tone,
+        content: data.content
+      });
 
-      if (generatorForm.type === 'Série' && data.episodes) {
-        // 1. Salva a Série (Item Pai)
-        const seriesId = await databaseService.saveNewContent({
-          type: 'Série',
-          title: data.title,
-          topic: generatorForm.topic,
-          tone: generatorForm.tone,
-          content: `Série de ${data.episodes.length} episódios sobre ${generatorForm.topic}`
-        });
-
-        if (seriesId) {
-          addItem({
-            id: seriesId,
-            type: 'Série',
-            title: data.title,
-            topic: generatorForm.topic,
-            tone: generatorForm.tone,
-            content: `Série de ${data.episodes.length} episódios sobre ${generatorForm.topic}`,
-            tags: [],
-            createdAt: new Date().toISOString(),
-            versions: [],
-            episodesCount: data.episodes.length
-          });
-
-          // 2. Salva cada Episódio como um Sermão vinculado
-          for (const ep of data.episodes) {
-            const epId = await databaseService.saveNewContent({
-              type: 'Sermão',
-              title: ep.title,
-              topic: data.title, // Vincula ao título da série
-              tone: generatorForm.tone,
-              content: ep.content
-            });
-
-            if (epId) {
-              addItem({
-                id: epId,
-                type: 'Sermão',
-                title: ep.title,
-                topic: data.title,
-                tone: generatorForm.tone,
-                content: ep.content,
-                tags: [],
-                createdAt: new Date().toISOString(),
-                versions: [{
-                  id: crypto.randomUUID(),
-                  title: ep.title,
-                  content: ep.content,
-                  createdAt: new Date().toISOString(),
-                  label: 'IA'
-                }]
-              });
-            }
-          }
-          navigate('/library'); // Vai para biblioteca para ver a série criada
+      if (contentId) {
+        if (data.remainingCredits !== undefined) {
+          setSubscriptionState({ credits: data.remainingCredits });
         }
-      } else {
-        // Lógica normal para Sermão ou Ilustração
-        const contentId = await databaseService.saveNewContent({
+        
+        addItem({
+          id: contentId,
           type: generatorForm.type,
           title: data.title,
           topic: data.topic || generatorForm.topic,
           tone: generatorForm.tone,
-          content: data.content
-        });
-
-        if (contentId) {
-          addItem({
-            id: contentId,
-            type: generatorForm.type,
+          content: data.content,
+          tags: [],
+          createdAt: new Date().toISOString(),
+          versions: [{
+            id: crypto.randomUUID(),
             title: data.title,
-            topic: data.topic || generatorForm.topic,
-            tone: generatorForm.tone,
             content: data.content,
-            tags: [],
             createdAt: new Date().toISOString(),
-            versions: [{
-              id: crypto.randomUUID(),
-              title: data.title,
-              content: data.content,
-              createdAt: new Date().toISOString(),
-              label: 'IA'
-            }]
-          });
-          navigate(`/view/${contentId}`);
-        }
+            label: 'IA'
+          }]
+        });
+        navigate(`/view/${contentId}`);
       }
     } catch (error: any) {
       console.error('Generation failed:', error);

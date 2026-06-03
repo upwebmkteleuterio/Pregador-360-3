@@ -1,123 +1,187 @@
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { ItemType } from "../store/useStore";
 import { SERMON_SYSTEM_INSTRUCTION } from "../constants/sermonFormat";
 import { databaseService } from "./databaseService";
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export interface GeneratedContent {
   title: string;
   topic: string;
   content: string;
-  episodes?: { title: string; content: string }[];
 }
-
-// Configurações de segurança para evitar bloqueio de temas teológicos sensíveis
-const safetySettings = [
-  {
-    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-    threshold: HarmBlockThreshold.BLOCK_NONE,
-  },
-];
 
 export const generateAIContent = async (
   type: ItemType,
   topic: string,
-  tone: string,
-  episodesCount: number = 4
-): Promise<GeneratedContent & { remainingCredits?: number }> => {
-  const modelName = "gemini-2.0-flash";
-  const apiKey = process.env.GEMINI_API_KEY;
+  tone: string
+) => {
+  const model = "gemini-3-flash-preview";
 
-  if (!apiKey) {
-    throw new Error("A chave de API do Gemini não foi encontrada. Verifique as configurações de ambiente.");
-  }
-
-  // Verificação de crédito via banco de dados
+  // Verificação de crédito segura via servidor
   const creditRes = await databaseService.deductCredit(`Geração de ${type}: ${topic.substring(0, 30)}...`);
   
   if (!creditRes.success) {
     throw new Error("INSUFFICIENT_CREDITS");
   }
 
-  try {
-    const ai = new GoogleGenAI(apiKey);
-    
-    // Simplificamos a instrução do sistema para string direta para máxima compatibilidade
-    const genModel = ai.getGenerativeModel({ 
-      model: modelName,
-      systemInstruction: type === 'Sermão' || type === 'Série' 
-        ? SERMON_SYSTEM_INSTRUCTION 
-        : "Você é um especialista em retórica, homilética e aconselhamento cristão."
-    });
+  if (type === 'Sermão') {
+    const sermonSchema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        topic: { type: Type.STRING, description: "Reference verse or main topic" },
+        content: { type: Type.STRING, description: "The full sermon formatted as requested" }
+      },
+      required: ["title", "topic", "content"]
+    };
 
-    // Prompt específico baseado no tipo
-    const prompt = type === 'Série'
-      ? `Crie uma SÉRIE DE SERMÕES estruturada com ${episodesCount} episódios sobre "${topic}". Use o tom ${tone}.`
-      : `Gere um(a) ${type} completo(a) sobre "${topic}" com tom ${tone}.`;
+    const prompt = `Gere um SERMÃO bíblico completo seguindo a estrutura técnica abaixo.
 
-    // Definição do esquema de resposta para JSON estruturado
-    const responseSchema = type === 'Série' 
-      ? {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            topic: { type: "string" },
-            episodes: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  title: { type: "string" },
-                  content: { type: "string" }
-                },
-                required: ["title", "content"]
-              }
-            }
-          },
-          required: ["title", "topic", "episodes"]
-        }
-      : {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            topic: { type: "string" },
-            content: { type: "string" }
-          },
-          required: ["title", "topic", "content"]
-        };
+TEMA/VERSÍCULO BASE: ${topic}
+TOM: ${tone}
 
-    const result = await genModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      safetySettings,
-      generationConfig: {
+REGRAS DE OURO (CRÍTICO):
+1. GRAMÁTICA E CAPITALIZAÇÃO: Use escrita padrão com gramática rigorosamente correta. Inicie OBRIGATORIAMENTE cada frase com LETRA MAIÚSCULA após pontos finais. Use maiúsculas em nomes próprios e nomes divinos (Deus, Jesus, Espírito Santo). Apenas os rótulos (EXPLICAÇÃO:, etc) devem ser inteiramente em CAIXA ALTA.
+2. ESPAÇAMENTO: Você DEVE colocar DUAS quebras de linha (\\n\\n) após cada título (##) e após cada separador (---).
+3. SEM REPETIÇÃO: NÃO inclua o título do sermão ou o tópico dentro do campo 'content'. Comece direto no Versículo Base.
+4. TEXTO LIMPO: No não use barras invertidas para escapar aspas.
+
+ESTRUTURA OBRIGATÓRIA:
+
+> [Texto Integral do Versículo Base]
+
+---
+
+## INTRODUÇÃO
+(Texto rico e envolvente aqui - gramática correta)
+
+---
+
+## CONTEXTO HISTÓRICO E BÍBLICO, USOS E COSTUMES DA ÉPOCA
+(Texto detalhado aqui)
+
+---
+
+## ANÁLISE DA PALAVRA ORIGINAL
+PALAVRA:
+SIGNIFICADO: (Inclua Hebraico/Grego/Latim, dicionário português e dicionário bíblico)
+APLICAÇÃO:
+
+---
+
+## CONTEXTO CONTEMPORÂNEO
+(Texto ligando o tema aos dias de hoje)
+
+---
+
+## DESENVOLVIMENTO
+
+### 1. (Título do Ponto)
+EXPLICAÇÃO: (Texto detalhado)
+REFERÊNCIAS: [Versículos integrais]
+APLICAÇÃO: (Texto detalhado)
+ILUSTRAÇÃO: [História impactante e detalhada]
+FRASE: (Frase de pensador cristão)
+
+### 2. (Título do Ponto)
+EXPLICAÇÃO: (Texto detalhado)
+REFERÊNCIAS: [Versículos integrais]
+APLICAÇÃO: (Texto detalhado)
+ILUSTRAÇÃO: [História impactante baseada no estilo de Rick Warren ou TD Jakes]
+FRASE: (Frase de pensador cristão)
+
+### 3. (Título do Ponto)
+EXPLICAÇÃO: (Texto detalhado)
+REFERÊNCIAS: [Versículos integrais]
+APLICAÇÃO: (Texto detalhado)
+ILUSTRAÇÃO: [História impactante e detalhada]
+FRASE: (Frase de pensador cristão)
+
+### 4. (Título do Ponto)
+EXPLICAÇÃO: (Texto detalhado)
+REFERÊNCIAS: [Versículos integrais]
+APLICAÇÃO: (Texto detalhado)
+ILUSTRAÇÃO: [História impactante e detalhada]
+FRASE: (Frase de pensador cristão)
+
+---
+
+## RESUMO IMPACTANTE DOS PONTOS ANTERIORES CITADOS
+(Texto recapitulando os 4 pontos)
+
+---
+
+## APLICAÇÃO PRÁTICA
+(Texto direto e aplicável)
+
+---
+
+## PERGUNTA RETÓRICA IMPACTANTE
+(Pergunta reflexiva e profunda)
+
+---
+
+## CONCLUSÃO
+(Fechamento forte)
+
+---
+
+## APELO
+(Convite espiritual final)
+
+Idioma: Português (Brasil).`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
         responseMimeType: "application/json",
-        responseSchema: responseSchema as any,
-        temperature: 0.7,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 8192,
+        responseSchema: sermonSchema,
+        systemInstruction: SERMON_SYSTEM_INSTRUCTION
       }
     });
 
-    const responseText = result.response.text();
-    const data = JSON.parse(responseText);
-    
-    return { ...data, remainingCredits: creditRes.remaining };
+    const result = JSON.parse(response.text) as GeneratedContent;
+    return { ...result, remainingCredits: creditRes.remaining };
+  } else {
+    // Illustration
+    const illustrationSchema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        topic: { type: Type.STRING },
+        content: { type: Type.STRING, description: "O corpo da história da ilustração e a aplicação moral" }
+      },
+      required: ["title", "topic", "content"]
+    };
 
-  } catch (err: any) {
-    console.error("[GeminiService] Falha na geração:", err);
-    // Relança o erro para que a UI possa lidar com ele (ex: mostrar mensagem de crédito insuficiente)
-    throw err;
+    const prompt = `Você é um curador de ilustrações cristãs de elite. Sua tarefa é gerar uma ILUSTRAÇÃO IMPACTANTE baseada no tema fornecido.
+
+TEMA: ${topic}
+
+DIRETRIZES (RIGOROSO):
+1. GRAMÁTICA: Use gramática padrão. Letras maiúsculas após pontos finais e em nomes próprios.
+2. ESPAÇAMENTO: Use \\n\\n entre parágrafos.
+3. ESTRUTURA:
+   (Narração da história baseada em fatos reais ou ciência - 3 a 4 parágrafos)
+   
+   ## APLICAÇÃO ESPIRITUAL
+   (2 a 3 parágrafos de aplicação poderosa)
+
+Idioma: Português (Brasil).`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: illustrationSchema,
+        systemInstruction: "Você é um especialista em retórica e homilética cristã."
+      }
+    });
+
+    const result = JSON.parse(response.text) as GeneratedContent;
+    return { ...result, remainingCredits: creditRes.remaining };
   }
 };
