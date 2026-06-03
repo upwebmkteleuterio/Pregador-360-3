@@ -20,7 +20,7 @@ export const generateAIContent = async (
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    throw new Error("A chave GEMINI_API_KEY não foi configurada no ambiente.");
+    throw new Error("A chave GEMINI_API_KEY não foi configurada. Por favor, adicione-a ao arquivo .env.local");
   }
 
   // Verificação de crédito segura via servidor
@@ -30,103 +30,76 @@ export const generateAIContent = async (
     throw new Error("INSUFFICIENT_CREDITS");
   }
 
-  // Instancia o SDK e o modelo apenas quando necessário
-  const ai = new GoogleGenAI(apiKey);
-  const genModel = ai.getGenerativeModel({ 
-    model: modelName,
-    systemInstruction: type === 'Sermão' || type === 'Série' ? SERMON_SYSTEM_INSTRUCTION : "Você é um especialista em retórica e homilética cristã."
-  });
+  try {
+    const ai = new GoogleGenAI(apiKey);
+    const genModel = ai.getGenerativeModel({ 
+      model: modelName,
+      systemInstruction: {
+        role: "system",
+        parts: [{ text: type === 'Sermão' || type === 'Série' ? SERMON_SYSTEM_INSTRUCTION : "Você é um especialista em retórica e homilética cristã." }]
+      }
+    });
 
-  if (type === 'Série') {
-    const seriesSchema = {
-      type: "object",
-      properties: {
-        title: { type: "string" },
-        topic: { type: "string" },
-        episodes: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              title: { type: "string", description: "Deve seguir o formato [Ep. X] - Título" },
-              content: { type: "string", description: "Conteúdo completo do sermão do episódio" }
-            },
-            required: ["title", "content"]
+    if (type === 'Série') {
+      const seriesSchema = {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          topic: { type: "string" },
+          episodes: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                content: { type: "string" }
+              },
+              required: ["title", "content"]
+            }
           }
+        },
+        required: ["title", "topic", "episodes"]
+      };
+
+      const prompt = `Crie uma SÉRIE DE SERMÕES com ${episodesCount} episódios sobre "${topic}" com tom ${tone}.`;
+
+      const result = await genModel.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: seriesSchema,
         }
-      },
-      required: ["title", "topic", "episodes"]
-    };
+      });
 
-    const prompt = `Você é um teólogo sênior criando uma SÉRIE DE SERMÕES com ${episodesCount} episódios.
-    TEMA CENTRAL: ${topic}
-    TOM: ${tone}
+      const data = JSON.parse(result.response.text());
+      return { ...data, remainingCredits: creditRes.remaining };
 
-    REGRAS DA SÉRIE:
-    1. CONEXÃO: A série deve ter um arco narrativo claro (Início, Meio e Fim).
-    2. ESTRUTURA INTERNA: Cada episódio deve ser um sermão completo.
-    3. TÍTULOS: O título de cada episódio DEVE começar com [Ep. X] - Nome do Episódio.
-    Gere exatamente ${episodesCount} episódios.`;
+    } else {
+      const standardSchema = {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          topic: { type: "string" },
+          content: { type: "string" }
+        },
+        required: ["title", "topic", "content"]
+      };
 
-    const result = await genModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: seriesSchema,
-      }
-    });
+      const prompt = `Gere um(a) ${type} sobre "${topic}" com tom ${tone}.`;
 
-    const data = JSON.parse(result.response.text());
-    return { ...data, remainingCredits: creditRes.remaining };
+      const result = await genModel.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: standardSchema,
+        }
+      });
 
-  } else if (type === 'Sermão') {
-    const sermonSchema = {
-      type: "object",
-      properties: {
-        title: { type: "string" },
-        topic: { type: "string" },
-        content: { type: "string" }
-      },
-      required: ["title", "topic", "content"]
-    };
-
-    const prompt = `Gere um SERMÃO bíblico completo seguindo a estrutura técnica padrão.
-    TEMA/VERSÍCULO BASE: ${topic}
-    TOM: ${tone}`;
-
-    const result = await genModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: sermonSchema,
-      }
-    });
-
-    const data = JSON.parse(result.response.text());
-    return { ...data, remainingCredits: creditRes.remaining };
-  } else {
-    // Illustration
-    const illustrationSchema = {
-      type: "object",
-      properties: {
-        title: { type: "string" },
-        topic: { type: "string" },
-        content: { type: "string" }
-      },
-      required: ["title", "topic", "content"]
-    };
-
-    const prompt = `Gere uma ILUSTRAÇÃO IMPACTANTE. TEMA: ${topic}. TOM: ${tone}`;
-
-    const result = await genModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: illustrationSchema,
-      }
-    });
-
-    const data = JSON.parse(result.response.text());
-    return { ...data, remainingCredits: creditRes.remaining };
+      const data = JSON.parse(result.response.text());
+      return { ...data, remainingCredits: creditRes.remaining };
+    }
+  } catch (err: any) {
+    console.error("[GeminiService] Error detail:", err);
+    throw err;
   }
 };
