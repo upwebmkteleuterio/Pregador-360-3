@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         topic: c.topic || '',
         tone: c.tone || 'Inspirador',
         content: c.content || '',
-        // Normalização: Filtramos valores nulos ou indefinidos e limpamos os nomes
+        parentSeriesId: c.parent_series_id, // Mapeamento crucial adicionado
         tags: c.content_tags ? c.content_tags.map((ct: any) => ct.tags?.name).filter(Boolean) : [],
         createdAt: c.created_at,
         versions: c.content_versions.map((v: any) => ({
@@ -103,7 +103,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         content: n.content || '',
         linked_content_id: n.linked_content_id,
         createdAt: n.created_at,
-        // Normalização: Filtramos valores nulos ou indefinidos e limpamos os nomes
         tags: n.note_tags ? n.note_tags.map((nt: any) => nt.tags?.name).filter(Boolean) : []
       })));
     }

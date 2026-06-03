@@ -66,8 +66,8 @@ export default function Generate() {
           };
           addItem(seriesItem);
 
-          // 2. Salva cada episódio vinculado à série
-          for (const ep of data.episodes) {
+          // 2. Salva cada episódio vinculado à série em paralelo para maior performance
+          const episodePromises = data.episodes.map(async (ep) => {
             const epId = await databaseService.saveNewContent({
               type: 'Sermão',
               title: ep.title,
@@ -97,7 +97,9 @@ export default function Generate() {
                 }]
               });
             }
-          }
+          });
+
+          await Promise.all(episodePromises);
 
           // 3. Navega para a tela da série
           navigate(`/series/${seriesId}`);
