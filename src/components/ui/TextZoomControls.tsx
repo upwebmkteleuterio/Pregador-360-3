@@ -31,7 +31,7 @@ export function TextZoomControls({ onZoomChange }: TextZoomControlsProps) {
   };
 
   return (
-    <div className="fixed bottom-[130px] left-1/2 -translate-x-1/2 z-[45] flex items-center gap-3 bg-[var(--bg-card)]/95 backdrop-blur-md px-4 py-2 rounded-full border border-[var(--border-color)] shadow-xl shadow-black/20 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed bottom-[92px] left-1/2 -translate-x-1/2 z-[45] flex items-center gap-3 bg-[var(--bg-card)]/95 backdrop-blur-md px-4 py-2 rounded-full border border-[var(--border-color)] shadow-xl shadow-black/20 animate-in fade-in slide-in-from-bottom-4 duration-300">
       <button
         onClick={handleZoomOut}
         disabled={zoom <= 70}
