@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { generateAIContent } from '../services/geminiService';
 import { databaseService } from '../services/databaseService';
+import { EstudoForm } from '../components/forms/EstudoForm';
+import { EscritorForm } from '../components/forms/EscritorForm';
+import { LiderancaForm } from '../components/forms/LiderancaForm';
 
 const TONES: { label: MessageTone; icon: any }[] = [
   { label: 'Inspirador', icon: Sparkles },
@@ -27,32 +30,36 @@ export default function Generate() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, stage: 'idle' as 'idle' | 'ai' | 'saving' });
   
-  const handleGenerate = async () => {
-    if (!generatorForm.topic.trim() || !auth.user?.id) return;
+  const handleGenerate = async (customType?: ItemType, customTopic?: string, extraParams?: any) => {
+    const activeType = customType || generatorForm.type;
+    const activeTopic = customTopic || generatorForm.topic;
+
+    if (!activeTopic.trim() || !auth.user?.id) return;
     
     setLoading(true);
-    setProgress({ current: 0, total: generatorForm.type === 'Série' ? generatorForm.episodes : 1, stage: 'ai' });
+    setProgress({ current: 0, total: activeType === 'Série' ? generatorForm.episodes : 1, stage: 'ai' });
     
     try {
       const data = await generateAIContent(
-        generatorForm.type,
-        generatorForm.topic,
+        activeType,
+        activeTopic,
         generatorForm.tone,
-        generatorForm.episodes
+        generatorForm.episodes,
+        extraParams
       );
 
       if (data.remainingCredits !== undefined) {
         setSubscriptionState({ credits: data.remainingCredits });
       }
 
-      if (generatorForm.type === 'Série' && data.episodes) {
+      if (activeType === 'Série' && data.episodes) {
         setProgress(prev => ({ ...prev, stage: 'saving' }));
         
         // 1. Salva o item "Pai" da série
         const seriesId = await databaseService.saveNewContent({
           type: 'Série',
           title: data.title,
-          topic: data.topic || generatorForm.topic,
+          topic: data.topic || activeTopic,
           tone: generatorForm.tone,
           content: `Série de ${data.episodes.length} episódios.`
         });
@@ -62,7 +69,7 @@ export default function Generate() {
             id: seriesId,
             type: 'Série' as const,
             title: data.title,
-            topic: data.topic || generatorForm.topic,
+            topic: data.topic || activeTopic,
             tone: generatorForm.tone,
             content: `Série de ${data.episodes.length} episódios.`,
             tags: [],
@@ -77,7 +84,7 @@ export default function Generate() {
             const epId = await databaseService.saveNewContent({
               type: 'Sermão',
               title: ep.title,
-              topic: generatorForm.topic,
+              topic: activeTopic,
               tone: generatorForm.tone,
               content: ep.content,
               parentSeriesId: seriesId
@@ -88,7 +95,7 @@ export default function Generate() {
                 id: epId,
                 type: 'Sermão',
                 title: ep.title,
-                topic: generatorForm.topic,
+                topic: activeTopic,
                 tone: generatorForm.tone,
                 content: ep.content,
                 tags: [],
@@ -110,12 +117,12 @@ export default function Generate() {
           navigate(`/series/${seriesId}`);
         }
       } else {
-        // Geração normal (Sermão ou Ilustração)
+        // Geração normal (Sermão, Ilustração, Estudo, Escritor, Liderança)
         setProgress(prev => ({ ...prev, stage: 'saving' }));
         const contentId = await databaseService.saveNewContent({
-          type: generatorForm.type,
+          type: activeType,
           title: data.title,
-          topic: data.topic || generatorForm.topic,
+          topic: data.topic || activeTopic,
           tone: generatorForm.tone,
           content: data.content
         });
@@ -123,9 +130,9 @@ export default function Generate() {
         if (contentId) {
           addItem({
             id: contentId,
-            type: generatorForm.type,
+            type: activeType,
             title: data.title,
-            topic: data.topic || generatorForm.topic,
+            topic: data.topic || activeTopic,
             tone: generatorForm.tone,
             content: data.content,
             tags: [],
@@ -165,10 +172,13 @@ export default function Generate() {
 
   const progressPercentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
 
+  // Helper para verificar se o tipo ativo é uma sub-ferramenta de recursos 360
+  const isRecurso360Active = ['Recursos 360', 'Estudo', 'Escritor', 'Liderança'].includes(generatorForm.type);
+
   return (
     <div className="space-y-8">
       <div>
-        {generatorForm.type === 'Recursos 360' ? (
+        {isRecurso360Active ? (
           <>
             <h1 className="text-4xl font-bold tracking-tight">
               Recursos <span className="text-yellow-500">360</span>
@@ -191,7 +201,7 @@ export default function Generate() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 p-1 bg-[var(--bg-card)] rounded-[1.25rem] relative">
         {types.map((type) => {
-          const isActive = generatorForm.type === type.label;
+          const isActive = type.label === 'Recursos 360' ? isRecurso360Active : generatorForm.type === type.label;
           return (
             <button
               key={type.label}
@@ -217,7 +227,7 @@ export default function Generate() {
         })}
       </div>
 
-      {generatorForm.type === 'Recursos 360' ? (
+      {generatorForm.type === 'Recursos 360' && (
         <div className="space-y-8 animate-in fade-in duration-500">
           <div className="space-y-4">
             <h2 className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase">
@@ -237,7 +247,7 @@ export default function Generate() {
                   Gere estudos bíblicos completos para células e pequenos grupos com quebra-gelo, perguntas, resumo e oração.
                 </p>
                 <button
-                  onClick={() => alert("Pronto para configurar o prompt e a geração na próxima etapa!")}
+                  onClick={() => setGeneratorForm({ type: 'Estudo' })}
                   className="w-full flex items-center justify-center gap-2 py-3.5 bg-yellow-500 hover:bg-yellow-400 text-zinc-950 font-bold rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-yellow-500/10"
                 >
                   <Sparkles size={16} />
@@ -257,7 +267,7 @@ export default function Generate() {
                   Desenvolva livros cristãos com esboço completo: introdução, 12 capítulos resumidos e conclusão.
                 </p>
                 <button
-                  onClick={() => alert("Pronto para configurar o prompt e a geração na próxima etapa!")}
+                  onClick={() => setGeneratorForm({ type: 'Escritor' })}
                   className="w-full flex items-center justify-center gap-2 py-3.5 bg-yellow-500 hover:bg-yellow-400 text-zinc-950 font-bold rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-yellow-500/10"
                 >
                   <Sparkles size={16} />
@@ -277,7 +287,7 @@ export default function Generate() {
                   Conteúdos profundos sobre liderança cristã, vida do líder, oração, crescimento da igreja e muito mais.
                 </p>
                 <button
-                  onClick={() => alert("Pronto para configurar o prompt e a geração na próxima etapa!")}
+                  onClick={() => setGeneratorForm({ type: 'Liderança' })}
                   className="w-full flex items-center justify-center gap-2 py-3.5 bg-yellow-500 hover:bg-yellow-400 text-zinc-950 font-bold rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-yellow-500/10"
                 >
                   <Sparkles size={16} />
@@ -307,7 +317,72 @@ export default function Generate() {
             </button>
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* Formulário do Estudo */}
+      {generatorForm.type === 'Estudo' && (
+        <div className="space-y-6 animate-in fade-in duration-500">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setGeneratorForm({ type: 'Recursos 360' })}
+              className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-yellow-500"
+            >
+              ← Voltar
+            </button>
+            <div className="h-4 w-px bg-[var(--border-color)]" />
+            <span className="text-xs font-bold uppercase text-yellow-500">Estudo de Célula</span>
+          </div>
+          <EstudoForm
+            initialTopic={generatorForm.topic}
+            loading={loading}
+            onSubmit={(data) => handleGenerate('Estudo', data.topic, { level: data.level, language: data.language })}
+          />
+        </div>
+      )}
+
+      {/* Formulário do Escritor */}
+      {generatorForm.type === 'Escritor' && (
+        <div className="space-y-6 animate-in fade-in duration-500">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setGeneratorForm({ type: 'Recursos 360' })}
+              className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-yellow-500"
+            >
+              ← Voltar
+            </button>
+            <div className="h-4 w-px bg-[var(--border-color)]" />
+            <span className="text-xs font-bold uppercase text-yellow-500">Escritor</span>
+          </div>
+          <EscritorForm
+            initialTopic={generatorForm.topic}
+            loading={loading}
+            onSubmit={(data) => handleGenerate('Escritor', data.topic, { chapters: data.chapters, language: data.language })}
+          />
+        </div>
+      )}
+
+      {/* Formulário do Liderança */}
+      {generatorForm.type === 'Liderança' && (
+        <div className="space-y-6 animate-in fade-in duration-500">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setGeneratorForm({ type: 'Recursos 360' })}
+              className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-yellow-500"
+            >
+              ← Voltar
+            </button>
+            <div className="h-4 w-px bg-[var(--border-color)]" />
+            <span className="text-xs font-bold uppercase text-yellow-500">Liderança</span>
+          </div>
+          <LiderancaForm
+            initialTopic={generatorForm.topic}
+            loading={loading}
+            onSubmit={(data) => handleGenerate('Liderança', data.topic, { focus: data.focus, language: data.language })}
+          />
+        </div>
+      )}
+
+      {!isRecurso360Active && (
         <>
           <div className="space-y-4">
             <label className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase">

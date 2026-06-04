@@ -136,20 +136,27 @@ export default function Library() {
       </div>
 
       <div className="space-y-6">
-        {/* Abas de Categorias: [SERMÕES] [SÉRIES] [ILUSTRAÇÕES] */}
-        <div className="flex p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50 max-w-md">
-          {(['Sermão', 'Série', 'Ilustração'] as const).map((filter) => (
+        {/* Abas de Categorias: [SERMÕES] [SÉRIES] [ILUSTRAÇÕES] [ESTUDOS] [LIVROS] [LIDERANÇA] com Scroll Horizontal */}
+        <div className="flex gap-1.5 p-1 bg-[var(--bg-card)] rounded-xl border border-[var(--border-color)]/50 overflow-x-auto no-scrollbar max-w-full select-none">
+          {([
+            { value: 'Sermão', label: 'Sermões' },
+            { value: 'Série', label: 'Séries' },
+            { value: 'Ilustração', label: 'Ilustrações' },
+            { value: 'Estudo', label: 'Estudos' },
+            { value: 'Escritor', label: 'Livros' },
+            { value: 'Liderança', label: 'Liderança' }
+          ] as const).map((filter) => (
             <button
-              key={filter}
-              onClick={() => setLibraryState({ filter, selectedTag: null })}
+              key={filter.value}
+              onClick={() => setLibraryState({ filter: filter.value, selectedTag: null })}
               className={cn(
-                "flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
-                library.filter === filter 
-                  ? "bg-[var(--bg-main)] text-[var(--text-primary)] shadow-md" 
+                "flex-shrink-0 px-5 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
+                library.filter === filter.value
+                  ? "bg-[var(--bg-main)] text-[var(--text-primary)] shadow-md border border-yellow-500/10"
                   : "text-[var(--text-secondary)] hover:text-yellow-500"
               )}
             >
-              {filter === 'Sermão' ? 'Sermões' : filter === 'Série' ? 'Séries' : 'Ilustrações'}
+              {filter.label}
             </button>
           ))}
         </div>
