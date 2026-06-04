@@ -472,7 +472,7 @@ export default function Generate() {
 
           <div className="space-y-4">
             <button
-              onClick={handleGenerate}
+              onClick={() => handleGenerate()}
               disabled={!generatorForm.topic.trim() || loading}
               className={cn(
                 "w-full flex items-center justify-center gap-2 py-5 rounded-2xl font-bold uppercase tracking-widest transition-all relative overflow-hidden",
