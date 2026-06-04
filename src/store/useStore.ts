@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type MessageTone = 'Inspirador' | 'Exortativo' | 'Teológico' | 'Acolhedor' | 'Confrontador' | 'Evangelístico' | 'Profético' | 'Didático' | 'Pastoral';
-export type ItemType = 'Sermão' | 'Ilustração' | 'Série';
+export type ItemType = 'Sermão' | 'Ilustração' | 'Série' | 'Recursos 360' | 'Estudo' | 'Escritor' | 'Liderança';
 
 export interface ContentVersion {
   id: string;

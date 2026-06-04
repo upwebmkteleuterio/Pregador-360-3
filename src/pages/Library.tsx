@@ -248,7 +248,7 @@ export default function Library() {
               {item.tags && item.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {item.tags.map(tagName => {
-                    const tagConfig = allTags.find(t => t.name.toLowerCase().trim() === name.toLowerCase().trim());
+                    const tagConfig = allTags.find(t => t.name.toLowerCase().trim() === tagName.toLowerCase().trim());
                     return (
                       <div 
                         key={tagName}
