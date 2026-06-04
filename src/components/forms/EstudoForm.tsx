@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Sparkles, BookOpen, Users } from 'lucide-react';
+import { Sparkles, BookOpen, Users, Loader2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { ShiningText } from '@/src/components/ui/shining-text';
 
 interface EstudoFormProps {
   initialTopic?: string;
@@ -83,19 +84,36 @@ export function EstudoForm({ initialTopic = '', onSubmit, loading }: EstudoFormP
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={loading || !topic.trim()}
-        className={cn(
-          "w-full flex items-center justify-center gap-2 py-5 rounded-2xl font-bold uppercase tracking-widest transition-all relative overflow-hidden",
-          topic.trim() && !loading
-            ? "bg-yellow-500 text-zinc-950 shadow-xl shadow-yellow-500/20 active:scale-[0.98]"
-            : "bg-[var(--bg-card)] text-[var(--text-secondary)] cursor-not-allowed"
+      <div className="space-y-4">
+        <button
+          type="submit"
+          disabled={loading || !topic.trim()}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 py-5 rounded-2xl font-bold uppercase tracking-widest transition-all relative overflow-hidden",
+            topic.trim() && !loading
+              ? "bg-yellow-500 text-zinc-950 shadow-xl shadow-yellow-500/20 active:scale-[0.98]"
+              : "bg-[var(--bg-card)] text-[var(--text-secondary)] cursor-not-allowed"
+          )}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin" size={20} />
+              Gerando...
+            </>
+          ) : (
+            <>
+              <Sparkles size={20} />
+              Gerar Estudo de Célula
+            </>
+          )}
+        </button>
+
+        {loading && (
+          <div className="flex justify-center pt-2">
+            <ShiningText text="Gerando o conteúdo, isso pode levar até 1 minuto." />
+          </div>
         )}
-      >
-        <Sparkles size={20} />
-        Gerar Estudo de Célula
-      </button>
+      </div>
     </form>
   );
 }
