@@ -170,8 +170,6 @@ export default function Generate() {
     { label: 'Recursos 360', icon: LayoutGrid },
   ];
 
-  const progressPercentage = progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
-
   // Helper para verificar se o tipo ativo é uma sub-ferramenta de recursos 360
   const isRecurso360Active = ['Recursos 360', 'Estudo', 'Escritor', 'Liderança'].includes(generatorForm.type);
 
@@ -494,10 +492,15 @@ export default function Generate() {
               )}
             </button>
 
+            {loading && generatorForm.type !== 'Série' && (
+              <div className="flex justify-center pt-2">
+                <ShiningText text="Gerando o conteúdo, isso pode levar até 1 minuto." />
+              </div>
+            )}
 
         <AnimatePresence>
-          {loading && (
-            <motion.div 
+          {loading && generatorForm.type === 'Série' && (
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
@@ -528,18 +531,16 @@ export default function Generate() {
                   <span>{Math.round(progressPercentage)}%</span>
                 </div>
                 <div className="h-1.5 bg-[var(--bg-main)] rounded-full overflow-hidden border border-[var(--border-color)]/30">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercentage}%` }}
-                    className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400"
+                    className="h-full bg-[linear-gradient(90deg,var(--tw-gradient-from),#ffe680,var(--tw-gradient-to))] bg-[length:200%_100%] bg-gradient-to-r from-yellow-600 to-yellow-400 animate-shimmer"
                   />
                 </div>
               </div>
 
               <p className="text-center text-[10px] text-[var(--text-secondary)] italic">
-                {generatorForm.type === 'Série'
-                  ? "Sua série está sendo preparada com profundidade teológica. Por favor, não feche a página."
-                  : "Preparando seu conteúdo personalizado..."}
+                Sua série está sendo preparada com profundidade teológica. Por favor, não feche a página.
               </p>
             </motion.div>
           )}
@@ -551,6 +552,13 @@ export default function Generate() {
       <style>{`
         .shadow-glow {
           box-shadow: 0 0 20px rgba(234, 179, 8, 0.1);
+        }
+        @keyframes progressShimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        .animate-shimmer {
+          animation: progressShimmer 2s infinite linear;
         }
       `}</style>
     </div>
