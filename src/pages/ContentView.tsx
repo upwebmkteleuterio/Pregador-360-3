@@ -37,11 +37,27 @@ export default function ContentView() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const headings = React.useMemo(() => {
+    if (!item?.content) return [];
+    let headingCount = 0;
+    return item.content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.startsWith('## '))
+      .map(line => {
+        const title = line.replace('## ', '').trim();
+        const id = `section-${headingCount++}`;
+        return { id, title };
+      });
+  }, [item?.content]);
+
   const formatContent = (content: string) => {
     const cleanContent = content
       .replace(/\\n/g, '\n')
       .replace(/\\"/g, '"')
       .replace(/\\'/g, "'");
+    
+    let headingIdx = 0;
     
     return cleanContent.split('\n').map((line, idx) => {
       const trimmedLine = line.trim();
@@ -59,8 +75,9 @@ export default function ContentView() {
 
       if (trimmedLine.startsWith('## ')) {
         const title = trimmedLine.replace('## ', '');
+        const currentId = `section-${headingIdx++}`;
         return (
-          <div key={idx} className="mt-12 mb-6 group">
+          <div key={idx} id={currentId} className="mt-12 mb-6 group scroll-mt-24">
             <h3 className="text-xs font-bold text-yellow-500/40 uppercase tracking-[0.2em] mb-2 px-1">
               {title}
             </h3>
@@ -393,41 +410,85 @@ export default function ContentView() {
         </button>
       </div>
 
-      <div>
-        <div className="flex gap-2 mb-3">
-          {item.tags?.map(tag => (
-            <span key={tag} className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase border border-[var(--border-color)] px-2 py-1 rounded">
-              {tag}
-            </span>
-          ))}
-          <span className="text-[10px] font-bold tracking-widest text-yellow-500/70 border border-yellow-500/20 px-2 py-1 rounded bg-yellow-500/5 uppercase">
-            {item.type}
-          </span>
-        </div>
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold leading-tight text-yellow-500 flex-1">{item.title}</h1>
-          <button 
-            onClick={handleCopy}
-            className="mt-1 p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all active:scale-90 rounded-xl"
-            title="Copiar Texto"
-          >
-            <Copy size={20} />
-          </button>
-        </div>
-        <p className="mt-2 text-[var(--text-secondary)] text-sm">{item.topic}</p>
-      </div>
+      {/* Dynamic Mobile Horizontal Navigation Bar */}
+      {['Estudo', 'Escritor', 'Liderança'].includes(item.type) && headings.length > 0 && (
+         <div className="md:hidden block -mx-6 px-6 overflow-x-auto no-scrollbar py-2 border-b border-[var(--border-color)]/10 bg-[var(--bg-main)]/50 backdrop-blur-sm sticky top-[4.5rem] z-20">
+           <div className="flex gap-2">
+             {headings.map(h => (
+               <button
+                 key={h.id}
+                 onClick={() => document.getElementById(h.id)?.scrollIntoView({ behavior: 'smooth' })}
+                 className="flex-shrink-0 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[10px] uppercase tracking-wider font-bold text-[var(--text-secondary)] hover:text-yellow-500 active:scale-95 transition-all"
+               >
+                 {h.title}
+               </button>
+             ))}
+           </div>
+         </div>
+      )}
 
-      <div className="relative">
-        <div className="absolute -left-4 top-0 bottom-0 w-1 bg-yellow-500/10 rounded-full" />
-        <div className="space-y-1 pl-2">
-          {formatContent(item.content)}
-        </div>
-      </div>
+      <div className={cn("flex gap-8 items-start w-full", ['Estudo', 'Escritor', 'Liderança'].includes(item.type) && "flex-col md:flex-row")}>
+        {/* Dynamic Desktop Vertical Sidebar */}
+        {['Estudo', 'Escritor', 'Liderança'].includes(item.type) && headings.length > 0 && (
+          <div className="hidden md:block w-64 flex-shrink-0">
+            <div className="sticky top-24 space-y-3 bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-3xl p-5">
+              <h3 className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase px-1">
+                Seções do Material
+              </h3>
+              <div className="h-[1px] w-full bg-[var(--border-color)]/50" />
+              <div className="space-y-1.5 max-h-[60vh] overflow-y-auto no-scrollbar">
+                {headings.map(h => (
+                  <button
+                    key={h.id}
+                    onClick={() => document.getElementById(h.id)?.scrollIntoView({ behavior: 'smooth' })}
+                    className="w-full text-left px-3 py-3 rounded-xl text-xs font-bold text-[var(--text-secondary)] hover:text-yellow-500 hover:bg-yellow-500/5 transition-all truncate block"
+                  >
+                    {h.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
-      <div className="py-12 flex items-center justify-center gap-4 text-[var(--text-secondary)] opacity-30">
-        <div className="h-[1px] flex-1 bg-[var(--border-color)]" />
-        <span className="text-[10px] uppercase tracking-widest font-bold">Fim da {item.type}</span>
-        <div className="h-[1px] flex-1 bg-[var(--border-color)]" />
+        <div className="flex-1 w-full space-y-8">
+          <div>
+            <div className="flex gap-2 mb-3">
+              {item.tags?.map(tag => (
+                <span key={tag} className="text-[10px] font-bold tracking-widest text-[var(--text-secondary)] uppercase border border-[var(--border-color)] px-2 py-1 rounded">
+                  {tag}
+                </span>
+              ))}
+              <span className="text-[10px] font-bold tracking-widest text-yellow-500/70 border border-yellow-500/20 px-2 py-1 rounded bg-yellow-500/5 uppercase">
+                {item.type}
+              </span>
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-3xl font-bold leading-tight text-yellow-500 flex-1">{item.title}</h1>
+              <button
+                onClick={handleCopy}
+                className="mt-1 p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all active:scale-90 rounded-xl"
+                title="Copiar Texto"
+              >
+                <Copy size={20} />
+              </button>
+            </div>
+            <p className="mt-2 text-[var(--text-secondary)] text-sm">{item.topic}</p>
+          </div>
+
+          <div className="relative">
+            <div className="absolute -left-4 top-0 bottom-0 w-1 bg-yellow-500/10 rounded-full" />
+            <div className="space-y-1 pl-2">
+              {formatContent(item.content)}
+            </div>
+          </div>
+
+          <div className="py-12 flex items-center justify-center gap-4 text-[var(--text-secondary)] opacity-30">
+            <div className="h-[1px] flex-1 bg-[var(--border-color)]" />
+            <span className="text-[10px] uppercase tracking-widest font-bold">Fim do {item.type}</span>
+            <div className="h-[1px] flex-1 bg-[var(--border-color)]" />
+          </div>
+        </div>
       </div>
     </div>
   );

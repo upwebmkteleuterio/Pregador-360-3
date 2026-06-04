@@ -14,9 +14,9 @@ export interface GeneratedContent {
   remainingCredits?: number;
 }
 
-import { ESTUDO_STRUCTURE_TEMPLATE, ESTUDO_SYSTEM_INSTRUCTION } from "../constants/recursos360/estudoPrompt";
-import { ESCRITOR_STRUCTURE_TEMPLATE, ESCRITOR_SYSTEM_INSTRUCTION } from "../constants/recursos360/escritorPrompt";
-import { LIDERANCA_STRUCTURE_TEMPLATE, LIDERANCA_SYSTEM_INSTRUCTION } from "../constants/recursos360/liderancaPrompt";
+import { ESTUDO_PROMPT_TEMPLATE } from "../constants/recursos360/estudoPrompt";
+import { ESCRITOR_PROMPT_TEMPLATE } from "../constants/recursos360/escritorPrompt";
+import { LIDERANCA_PROMPT_TEMPLATE } from "../constants/recursos360/liderancaPrompt";
 
 export const generateAIContent = async (
   type: ItemType,
@@ -48,16 +48,10 @@ export const generateAIContent = async (
     const level = extraParams?.level || 'Geral';
     const language = extraParams?.language || 'Português (Brasil)';
 
-    const prompt = `Gere um ESTUDO BÍBLICO DE GRUPO PEQUENO (CÉLULA) completo seguindo rigorosamente o modelo estrutural fornecido abaixo.
-
-TEMA/TEXTO BASE: ${topic}
-NÍVEL DO GRUPO (PÚBLICO): ${level}
-IDIOMA: ${language}
-
-MODELO OBRIGATÓRIO (Mantenha todos os cabeçalhos de seções idênticos aos listados):
-${ESTUDO_STRUCTURE_TEMPLATE}
-
-Importante: A linguagem deve se adequar perfeitamente para o público de nível "${level}".`;
+    const prompt = ESTUDO_PROMPT_TEMPLATE
+      .replace('{{TOPIC}}', topic)
+      .replace(/{{LANGUAGE}}/g, language)
+      .replace(/{{LEVEL}}/g, level);
 
     const response = await ai.models.generateContent({
       model,
@@ -65,7 +59,7 @@ Importante: A linguagem deve se adequar perfeitamente para o público de nível 
       config: {
         responseMimeType: "application/json",
         responseSchema: studySchema,
-        systemInstruction: ESTUDO_SYSTEM_INSTRUCTION
+        systemInstruction: "Você é um teólogo cristão, especialista em ensino bíblico, discipulado e liderança de pequenos grupos."
       }
     });
 
@@ -86,16 +80,10 @@ Importante: A linguagem deve se adequar perfeitamente para o público de nível 
     const chapters = extraParams?.chapters || 12;
     const language = extraParams?.language || 'Português (Brasil)';
 
-    const prompt = `Gere um ESBOÇO LITERÁRIO DE LIVRO completo com exatamente ${chapters} capítulos detalhados, seguindo rigorosamente o modelo fornecido abaixo.
-
-TEMA DO LIVRO: ${topic}
-QUANTIDADE DE CAPÍTULOS: ${chapters}
-IDIOMA: ${language}
-
-MODELO OBRIGATÓRIO:
-${ESCRITOR_STRUCTURE_TEMPLATE}
-
-Certifique-se de que TODOS os ${chapters} capítulos sejam gerados com seus respectivos títulos e resumos detalhados.`;
+    const prompt = ESCRITOR_PROMPT_TEMPLATE
+      .replace('{{TOPIC}}', topic)
+      .replace(/{{LANGUAGE}}/g, language)
+      .replace(/{{CHAPTERS}}/g, chapters.toString());
 
     const response = await ai.models.generateContent({
       model,
@@ -103,7 +91,7 @@ Certifique-se de que TODOS os ${chapters} capítulos sejam gerados com seus resp
       config: {
         responseMimeType: "application/json",
         responseSchema: writerSchema,
-        systemInstruction: ESCRITOR_SYSTEM_INSTRUCTION
+        systemInstruction: "Você é um escritor cristão, teólogo e especialista em produção literária cristã."
       }
     });
 
@@ -124,14 +112,10 @@ Certifique-se de que TODOS os ${chapters} capítulos sejam gerados com seus resp
     const focus = extraParams?.focus || 'Geral';
     const language = extraParams?.language || 'Português (Brasil)';
 
-    const prompt = `Gere um material completo de CAPACITAÇÃO E TREINAMENTO DE LIDERANÇA CRISTÃ, focado em liderança servil, seguindo rigorosamente o modelo estrutural abaixo.
-
-TEMA/DIFICULDADE: ${topic}
-FOCO DO CONTEÚDO: ${focus}
-IDIOMA: ${language}
-
-MODELO OBRIGATÓRIO:
-${LIDERANCA_STRUCTURE_TEMPLATE}`;
+    const prompt = LIDERANCA_PROMPT_TEMPLATE
+      .replace('{{TOPIC}}', topic)
+      .replace(/{{LANGUAGE}}/g, language)
+      .replace(/{{FOCUS}}/g, focus);
 
     const response = await ai.models.generateContent({
       model,
@@ -139,7 +123,7 @@ ${LIDERANCA_STRUCTURE_TEMPLATE}`;
       config: {
         responseMimeType: "application/json",
         responseSchema: leadershipSchema,
-        systemInstruction: LIDERANCA_SYSTEM_INSTRUCTION
+        systemInstruction: "Você é um especialista em liderança cristã, teologia pastoral e desenvolvimento ministerial."
       }
     });
 
