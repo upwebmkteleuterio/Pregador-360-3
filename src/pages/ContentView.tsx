@@ -7,11 +7,11 @@ import {
   Pencil,
   Volume2,
   History,
-  Copy,
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { TextZoomControls } from '../components/ui/TextZoomControls';
+import { CopyButton } from '../components/ui/CopyButton';
 
 export default function ContentView() {
   const { id } = useParams();
@@ -467,13 +467,14 @@ export default function ContentView() {
             </div>
             <div className="flex items-start justify-between gap-4">
               <h1 className="text-3xl font-bold leading-tight text-yellow-500 flex-1">{item.title}</h1>
-              <button
-                onClick={handleCopy}
-                className="mt-1 p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all active:scale-90 rounded-xl"
-                title="Copiar Texto"
-              >
-                <Copy size={20} />
-              </button>
+              <CopyButton
+                content={`${item.title}\n\n${item.topic}\n\n${item.content}`}
+                onCopy={() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="mt-1 p-3 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-yellow-500 transition-all rounded-xl flex items-center justify-center h-12 w-12"
+              />
             </div>
             <p className="mt-2 text-[var(--text-secondary)] text-sm">{item.topic}</p>
           </div>
