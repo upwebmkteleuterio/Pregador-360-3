@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
-import { 
-  ChevronLeft, 
-  Pencil, 
-  Volume2, 
-  History, 
+import {
+  ChevronLeft,
+  Pencil,
+  Volume2,
+  History,
   Copy,
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { TextZoomControls } from '../components/ui/TextZoomControls';
 
 export default function ContentView() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function ContentView() {
   const { items, setModalState } = useStore();
   const item = items.find(i => i.id === id);
   const [copied, setCopied] = useState(false);
+  const [zoom, setZoom] = useState(100);
 
   if (!item) {
     return (
@@ -451,7 +453,7 @@ export default function ContentView() {
           </div>
         )}
 
-        <div className="flex-1 w-full space-y-8">
+        <div className="flex-1 w-full space-y-8 zoomable-content">
           <div>
             <div className="flex gap-2 mb-3">
               {item.tags?.map(tag => (
@@ -490,6 +492,23 @@ export default function ContentView() {
           </div>
         </div>
       </div>
+
+      {/* Floating text zoom controls */}
+      <TextZoomControls onZoomChange={setZoom} />
+
+      {/* Dynamic zoom-scaling injection style */}
+      <style>{`
+        .zoomable-content p {
+          font-size: calc(0.875rem * ${zoom / 100}) !important;
+          line-height: 1.8 !important;
+        }
+        .zoomable-content h3 span {
+          font-size: calc(1.125rem * ${zoom / 100}) !important;
+        }
+        .zoomable-content h4 {
+          font-size: calc(1rem * ${zoom / 100}) !important;
+        }
+      `}</style>
     </div>
   );
 }
