@@ -3,6 +3,7 @@ import { useStore } from '@/src/store/useStore';
 import { cn } from '@/src/lib/utils';
 import { Search, Plus, Tag as TagIcon, Trash2, Copy, ChevronRight, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getBorderColorForType } from '@/src/lib/contentTypeColors';
 
 export default function Library() {
   const navigate = useNavigate();
@@ -215,15 +216,15 @@ export default function Library() {
       <div className="space-y-4 pt-4">
         {filteredItems.length > 0 ? (
           filteredItems.map((item) => (
-            <div 
+            <div
               key={item.id}
               onClick={() => handleOpenItem(item)}
               className="bg-[var(--bg-card)]/50 border border-[var(--border-color)] rounded-[2rem] p-6 space-y-5 relative overflow-hidden group hover:bg-[var(--bg-card)]/80 hover:border-yellow-500/20 transition-all active:scale-[0.99] cursor-pointer"
             >
-              <div 
-                className="absolute left-0 top-0 bottom-0 w-1.5 transition-colors" 
-                style={{ 
-                  backgroundColor: '#EAB308' // Padronizado para Amarelo
+              <div
+                className="absolute left-0 top-0 bottom-0 w-1.5 transition-colors"
+                style={{
+                  backgroundColor: getBorderColorForType(item.type)
                 }}
               />
               
@@ -270,38 +271,38 @@ export default function Library() {
               )}
 
               <div className="flex items-center justify-between pt-5 border-t border-[var(--border-color)]/50">
-                <div className="flex items-center gap-4">
-                  <button 
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setModalState('deleteConfirmOpen', true, item.id);
                     }}
-                    className="p-2.5 text-[var(--text-secondary)] hover:text-red-500 transition-colors"
+                    className="p-1.5 text-[var(--text-secondary)] hover:text-red-500 transition-colors"
                   >
-                    <Trash2 size={20} />
+                    <Trash2 size={18} />
                   </button>
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       duplicateItem(item.id);
                     }}
-                    className="p-2.5 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
+                    className="p-1.5 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
                   >
-                    <Copy size={20} />
+                    <Copy size={18} />
                   </button>
-                  <button 
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setModalState('tagModalOpen', true, item.id);
                     }}
-                    className="p-2.5 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
+                    className="p-1.5 text-[var(--text-secondary)] hover:text-yellow-500 transition-colors"
                   >
-                    <TagIcon size={20} />
+                    <TagIcon size={18} />
                   </button>
                 </div>
                 
                 <div className={cn(
-                  "flex items-center gap-3 px-8 py-3.5 font-bold text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg",
+                  "flex items-center gap-2 px-4 sm:px-8 py-3 font-bold text-[10px] sm:text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shrink-0",
                   "bg-yellow-500 text-zinc-950 shadow-yellow-500/10 hover:bg-yellow-400"
                 )}>
                   Abrir {item.type === 'Série' ? 'Série' : 'Conteúdo'}
