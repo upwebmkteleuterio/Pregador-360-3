@@ -9,6 +9,7 @@ import { databaseService } from '../services/databaseService';
 import { EstudoForm } from '../components/forms/EstudoForm';
 import { EscritorForm } from '../components/forms/EscritorForm';
 import { LiderancaForm } from '../components/forms/LiderancaForm';
+import { ShiningText } from '../components/ui/shining-text';
 
 const TONES: { label: MessageTone; icon: any }[] = [
   { label: 'Inspirador', icon: Sparkles },
@@ -29,10 +30,45 @@ export default function Generate() {
   const { generatorForm, setGeneratorForm, addItem, auth, setSubscriptionState, setModalState } = useStore();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, stage: 'idle' as 'idle' | 'ai' | 'saving' });
+  const [seriesTimeElapsed, setSeriesTimeElapsed] = useState(0);
+
+  // progressPercentage declared cleanly at the top of component scope
+  const progressPercentage = React.useMemo(() => {
+    if (generatorForm.type !== 'Série') {
+      return progress.total > 0 ? (progress.current / progress.total) * 100 : 0;
+    }
+    if (progress.current === 0) {
+      if (seriesTimeElapsed >= 20) return 20;
+      if (seriesTimeElapsed >= 10) return 10;
+      return 0;
+    }
+    return 20 + (progress.current / progress.total) * 80;
+  }, [progress, seriesTimeElapsed, generatorForm.type]);
+
+  // UX Refinement: Reset to 'Recursos 360' selection when mounting Generate
+  React.useEffect(() => {
+    if (['Estudo', 'Escritor', 'Liderança'].includes(generatorForm.type)) {
+      setGeneratorForm({ type: 'Recursos 360' });
+    }
+  }, []);
+
+  // Timer to smoothly advance Series progress during initial API think time
+  React.useEffect(() => {
+    let interval: any;
+    if (loading && generatorForm.type === 'Série') {
+      setSeriesTimeElapsed(0);
+      interval = setInterval(() => {
+        setSeriesTimeElapsed(prev => prev + 1);
+      }, 1000);
+    } else {
+      setSeriesTimeElapsed(0);
+    }
+    return () => clearInterval(interval);
+  }, [loading, generatorForm.type]);
   
-  const handleGenerate = async (customType?: ItemType, customTopic?: string, extraParams?: any) => {
-    const activeType = customType || generatorForm.type;
-    const activeTopic = customTopic || generatorForm.topic;
+  const handleGenerate = async (customType?: ItemType | any, customTopic?: string, extraParams?: any) => {
+    const activeType = (customType && typeof customType === 'string') ? customType : generatorForm.type;
+    const activeTopic = (customTopic && typeof customTopic === 'string') ? customTopic : generatorForm.topic;
 
     if (!activeTopic.trim() || !auth.user?.id) return;
     
@@ -321,7 +357,7 @@ export default function Generate() {
       {generatorForm.type === 'Estudo' && (
         <div className="space-y-6 animate-in fade-in duration-500">
           <div className="flex items-center gap-3">
-            <button
+            <button 
               onClick={() => setGeneratorForm({ type: 'Recursos 360' })}
               className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-yellow-500"
             >
@@ -330,10 +366,10 @@ export default function Generate() {
             <div className="h-4 w-px bg-[var(--border-color)]" />
             <span className="text-xs font-bold uppercase text-yellow-500">Estudo de Célula</span>
           </div>
-          <EstudoForm
-            initialTopic={generatorForm.topic}
-            loading={loading}
-            onSubmit={(data) => handleGenerate('Estudo', data.topic, { level: data.level, language: data.language })}
+          <EstudoForm 
+            initialTopic={generatorForm.topic} 
+            loading={loading} 
+            onSubmit={(data) => handleGenerate('Estudo', data.topic, { level: data.level, language: data.language })} 
           />
         </div>
       )}
@@ -342,7 +378,7 @@ export default function Generate() {
       {generatorForm.type === 'Escritor' && (
         <div className="space-y-6 animate-in fade-in duration-500">
           <div className="flex items-center gap-3">
-            <button
+            <button 
               onClick={() => setGeneratorForm({ type: 'Recursos 360' })}
               className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-yellow-500"
             >
@@ -351,10 +387,10 @@ export default function Generate() {
             <div className="h-4 w-px bg-[var(--border-color)]" />
             <span className="text-xs font-bold uppercase text-yellow-500">Escritor</span>
           </div>
-          <EscritorForm
-            initialTopic={generatorForm.topic}
-            loading={loading}
-            onSubmit={(data) => handleGenerate('Escritor', data.topic, { chapters: data.chapters, language: data.language })}
+          <EscritorForm 
+            initialTopic={generatorForm.topic} 
+            loading={loading} 
+            onSubmit={(data) => handleGenerate('Escritor', data.topic, { chapters: data.chapters, language: data.language })} 
           />
         </div>
       )}
@@ -363,7 +399,7 @@ export default function Generate() {
       {generatorForm.type === 'Liderança' && (
         <div className="space-y-6 animate-in fade-in duration-500">
           <div className="flex items-center gap-3">
-            <button
+            <button 
               onClick={() => setGeneratorForm({ type: 'Recursos 360' })}
               className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-yellow-500"
             >
@@ -372,10 +408,10 @@ export default function Generate() {
             <div className="h-4 w-px bg-[var(--border-color)]" />
             <span className="text-xs font-bold uppercase text-yellow-500">Liderança</span>
           </div>
-          <LiderancaForm
-            initialTopic={generatorForm.topic}
-            loading={loading}
-            onSubmit={(data) => handleGenerate('Liderança', data.topic, { focus: data.focus, language: data.language })}
+          <LiderancaForm 
+            initialTopic={generatorForm.topic} 
+            loading={loading} 
+            onSubmit={(data) => handleGenerate('Liderança', data.topic, { focus: data.focus, language: data.language })} 
           />
         </div>
       )}
