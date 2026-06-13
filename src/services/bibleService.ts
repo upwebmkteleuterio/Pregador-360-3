@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
 import { databaseService } from "./databaseService";
+import { supabase } from '../integrations/supabase/client';
 
 export interface BibleAiResult {
   themes: string[];
@@ -9,12 +9,6 @@ export interface BibleAiResult {
 }
 
 export async function consultBibleAi(query: string): Promise<BibleAiResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error("Configuração da API não encontrada.");
-  }
-
   // Verificação de crédito agora é feita internamente pelo banco usando a sessão do usuário
   const creditRes = await databaseService.deductCredit(`Pesquisa Bíblica: ${query.substring(0, 30)}...`);
   
@@ -22,8 +16,6 @@ export async function consultBibleAi(query: string): Promise<BibleAiResult> {
     throw new Error("INSUFFICIENT_CREDITS");
   }
 
-  const ai = new GoogleGenAI({ apiKey });
-  
   const prompt = `Você é um assistente bíblico especialista. 
   O usuário está buscando informações sobre: "${query}". 
   Forneça uma análise teológica profunda, exegese e contexto. 
@@ -41,12 +33,21 @@ export async function consultBibleAi(query: string): Promise<BibleAiResult> {
   
   Importante: Nada após o marcador :::SYSTEM_DATA::: será visto pelo usuário, então não escreva textos explicativos lá, apenas as tags.`;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt
+  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+    body: {
+      action: 'generate_content',
+      payload: {
+        model: "gemini-3-flash-preview",
+        contents: prompt
+      }
+    }
   });
 
-  const content = response.text;
+  if (error || !data) {
+    throw new Error(error?.message || "Falha ao consultar a inteligência bíblica.");
+  }
+
+  const content = data.text;
   if (!content) throw new Error("A IA não retornou conteúdo.");
 
   const parsed = parseBibleAiResponse(content);

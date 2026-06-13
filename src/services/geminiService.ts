@@ -1,10 +1,9 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { ItemType } from "../store/useStore";
 import { SERMON_SYSTEM_INSTRUCTION } from "../constants/sermonFormat";
 import { SERMON_STRUCTURE_TEMPLATE } from "../constants/sermonTemplate";
 import { databaseService } from "./databaseService";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { supabase } from '../integrations/supabase/client';
 
 export interface GeneratedContent {
   title: string;
@@ -17,6 +16,21 @@ export interface GeneratedContent {
 import { ESTUDO_PROMPT_TEMPLATE } from "../constants/recursos360/estudoPrompt";
 import { ESCRITOR_PROMPT_TEMPLATE } from "../constants/recursos360/escritorPrompt";
 import { LIDERANCA_PROMPT_TEMPLATE } from "../constants/recursos360/liderancaPrompt";
+
+async function callGeminiProxy(model: string, contents: any, config: any) {
+  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+    body: {
+      action: 'generate_content',
+      payload: { model, contents, config }
+    }
+  });
+
+  if (error || !data) {
+    throw new Error(error?.message || "Falha ao gerar conteúdo do servidor de IA.");
+  }
+
+  return data; // { text, candidates }
+}
 
 export const generateAIContent = async (
   type: ItemType,
@@ -53,14 +67,10 @@ export const generateAIContent = async (
       .replace(/{{LANGUAGE}}/g, language)
       .replace(/{{LEVEL}}/g, level);
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: studySchema,
-        systemInstruction: "Você é um teólogo cristão, especialista em ensino bíblico, discipulado e liderança de pequenos grupos."
-      }
+    const response = await callGeminiProxy(model, prompt, {
+      responseMimeType: "application/json",
+      responseSchema: studySchema,
+      systemInstruction: "Você é um teólogo cristão, especialista em ensino bíblico, discipulado e liderança de pequenos grupos."
     });
 
     const result = JSON.parse(response.text) as GeneratedContent;
@@ -85,14 +95,10 @@ export const generateAIContent = async (
       .replace(/{{LANGUAGE}}/g, language)
       .replace(/{{CHAPTERS}}/g, chapters.toString());
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: writerSchema,
-        systemInstruction: "Você é um escritor cristão, teólogo e especialista em produção literária cristã."
-      }
+    const response = await callGeminiProxy(model, prompt, {
+      responseMimeType: "application/json",
+      responseSchema: writerSchema,
+      systemInstruction: "Você é um escritor cristão, teólogo e especialista em produção literária cristã."
     });
 
     const result = JSON.parse(response.text) as GeneratedContent;
@@ -117,14 +123,10 @@ export const generateAIContent = async (
       .replace(/{{LANGUAGE}}/g, language)
       .replace(/{{FOCUS}}/g, focus);
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: leadershipSchema,
-        systemInstruction: "Você é um especialista em liderança cristã, teologia pastoral e desenvolvimento ministerial."
-      }
+    const response = await callGeminiProxy(model, prompt, {
+      responseMimeType: "application/json",
+      responseSchema: leadershipSchema,
+      systemInstruction: "Você é um especialista em liderança cristã, teologia pastoral e desenvolvimento ministerial."
     });
 
     const result = JSON.parse(response.text) as GeneratedContent;
@@ -168,14 +170,10 @@ ${SERMON_STRUCTURE_TEMPLATE}
 
 Idioma: Português (Brasil).`;
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: seriesSchema,
-        systemInstruction: SERMON_SYSTEM_INSTRUCTION
-      }
+    const response = await callGeminiProxy(model, prompt, {
+      responseMimeType: "application/json",
+      responseSchema: seriesSchema,
+      systemInstruction: SERMON_SYSTEM_INSTRUCTION
     });
 
     const result = JSON.parse(response.text);
@@ -208,14 +206,10 @@ ${SERMON_STRUCTURE_TEMPLATE}
 
 Idioma: Português (Brasil).`;
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: sermonSchema,
-        systemInstruction: SERMON_SYSTEM_INSTRUCTION
-      }
+    const response = await callGeminiProxy(model, prompt, {
+      responseMimeType: "application/json",
+      responseSchema: sermonSchema,
+      systemInstruction: SERMON_SYSTEM_INSTRUCTION
     });
 
     const result = JSON.parse(response.text) as GeneratedContent;
@@ -245,14 +239,10 @@ ESTRUTURA:
 
 Idioma: Português (Brasil).`;
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: illustrationSchema,
-        systemInstruction: "Você é um especialista em retórica e homilética cristã."
-      }
+    const response = await callGeminiProxy(model, prompt, {
+      responseMimeType: "application/json",
+      responseSchema: illustrationSchema,
+      systemInstruction: "Você é um especialista em retórica e homilética cristã."
     });
 
     const result = JSON.parse(response.text) as GeneratedContent;
