@@ -63,7 +63,11 @@ serve(async (req) => {
         config
       })
 
-      return new Response(JSON.stringify({ text: response.text, candidates: response.candidates }), {
+      return new Response(JSON.stringify({ 
+        text: response.text, 
+        candidates: response.candidates,
+        usageMetadata: response.usageMetadata
+      }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })

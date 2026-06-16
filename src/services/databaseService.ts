@@ -8,7 +8,7 @@ import { ContentItem, Note, Plan } from "../store/useStore";
 export const databaseService = {
   // --- PERFIL E CRÉDITOS ---
 
-  deductCredit: async (description: string): Promise<{ success: boolean; remaining: number; error?: string }> => {
+  deductCredit: async (description: string): Promise<{ success: boolean; remaining: number; logId?: string; error?: string }> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, remaining: 0, error: "Usuário não autenticado" };
 
@@ -19,19 +19,42 @@ export const databaseService = {
       return { success: false, remaining: 0, error: error.message };
     }
 
+    let logId: string | undefined;
+
     if (data && data.success) {
-      await supabase.from('credits_log').insert({
-        user_id: user.id,
-        description,
-        amount_changed: -1
-      });
+      const { data: insertedLog, error: logError } = await supabase
+        .from('credits_log')
+        .insert({
+          user_id: user.id,
+          description,
+          amount_changed: -1
+        })
+        .select('id')
+        .single();
+
+      if (!logError && insertedLog) {
+        logId = insertedLog.id;
+      }
     }
 
-    return { 
-      success: data?.success || false, 
-      remaining: data?.remaining ?? 0, 
-      error: data?.error 
+    return {
+      success: data?.success || false,
+      remaining: data?.remaining ?? 0,
+      logId,
+      error: data?.error
     };
+  },
+
+  updateCreditLog: async (logId: string, promptTokens: number, candidatesTokens: number, estimatedCostUsd: number): Promise<void> => {
+    await supabase
+      .from('credits_log')
+      .update({
+        prompt_tokens: promptTokens,
+        candidates_tokens: candidatesTokens,
+        total_tokens: promptTokens + candidatesTokens,
+        estimated_cost_usd: estimatedCostUsd
+      })
+      .eq('id', logId);
   },
 
   // --- CONTEÚDOS ---

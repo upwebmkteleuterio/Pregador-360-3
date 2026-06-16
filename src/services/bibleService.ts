@@ -1,5 +1,6 @@
 import { databaseService } from "./databaseService";
 import { supabase } from '../integrations/supabase/client';
+import { calculateTokenCost } from "../constants/tokenRates";
 
 export interface BibleAiResult {
   themes: string[];
@@ -45,6 +46,17 @@ export async function consultBibleAi(query: string): Promise<BibleAiResult> {
 
   if (error || !data) {
     throw new Error(error?.message || "Falha ao consultar a inteligência bíblica.");
+  }
+
+  // Se houver logId e metadados de uso da API, calcula e salva o custo real de tokens
+  if (creditRes.logId && data.usageMetadata) {
+    const promptTokens = data.usageMetadata.promptTokenCount || 0;
+    const candidatesTokens = data.usageMetadata.candidatesTokenCount || 0;
+    const cost = calculateTokenCost(promptTokens, candidatesTokens);
+    
+    await databaseService.updateCreditLog(creditRes.logId, promptTokens, candidatesTokens, cost).catch(err => {
+      console.error("[bibleService] Erro ao atualizar log de tokens no banco:", err);
+    });
   }
 
   const content = data.text;

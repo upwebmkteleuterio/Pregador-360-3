@@ -4,6 +4,7 @@ import { SERMON_SYSTEM_INSTRUCTION } from "../constants/sermonFormat";
 import { SERMON_STRUCTURE_TEMPLATE } from "../constants/sermonTemplate";
 import { databaseService } from "./databaseService";
 import { supabase } from '../integrations/supabase/client';
+import { calculateTokenCost } from "../constants/tokenRates";
 
 export interface GeneratedContent {
   title: string;
@@ -17,7 +18,7 @@ import { ESTUDO_PROMPT_TEMPLATE } from "../constants/recursos360/estudoPrompt";
 import { ESCRITOR_PROMPT_TEMPLATE } from "../constants/recursos360/escritorPrompt";
 import { LIDERANCA_PROMPT_TEMPLATE } from "../constants/recursos360/liderancaPrompt";
 
-async function callGeminiProxy(model: string, contents: any, config: any) {
+async function callGeminiProxy(model: string, contents: any, config: any, logId?: string) {
   const { data, error } = await supabase.functions.invoke('gemini-proxy', {
     body: {
       action: 'generate_content',
@@ -29,7 +30,18 @@ async function callGeminiProxy(model: string, contents: any, config: any) {
     throw new Error(error?.message || "Falha ao gerar conteúdo do servidor de IA.");
   }
 
-  return data; // { text, candidates }
+  // Se houver logId e metadados de uso da API, calcula e salva o custo real de tokens
+  if (logId && data.usageMetadata) {
+    const promptTokens = data.usageMetadata.promptTokenCount || 0;
+    const candidatesTokens = data.usageMetadata.candidatesTokenCount || 0;
+    const cost = calculateTokenCost(promptTokens, candidatesTokens);
+    
+    await databaseService.updateCreditLog(logId, promptTokens, candidatesTokens, cost).catch(err => {
+      console.error("[geminiService] Erro ao atualizar log de tokens no banco:", err);
+    });
+  }
+
+  return data; // { text, candidates, usageMetadata }
 }
 
 export const generateAIContent = async (
@@ -71,7 +83,7 @@ export const generateAIContent = async (
       responseMimeType: "application/json",
       responseSchema: studySchema,
       systemInstruction: "Você é um teólogo cristão, especialista em ensino bíblico, discipulado e liderança de pequenos grupos."
-    });
+    }, creditRes.logId);
 
     const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
@@ -99,7 +111,7 @@ export const generateAIContent = async (
       responseMimeType: "application/json",
       responseSchema: writerSchema,
       systemInstruction: "Você é um escritor cristão, teólogo e especialista em produção literária cristã."
-    });
+    }, creditRes.logId);
 
     const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
@@ -127,7 +139,7 @@ export const generateAIContent = async (
       responseMimeType: "application/json",
       responseSchema: leadershipSchema,
       systemInstruction: "Você é um especialista em liderança cristã, teologia pastoral e desenvolvimento ministerial."
-    });
+    }, creditRes.logId);
 
     const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
@@ -174,7 +186,7 @@ Idioma: Português (Brasil).`;
       responseMimeType: "application/json",
       responseSchema: seriesSchema,
       systemInstruction: SERMON_SYSTEM_INSTRUCTION
-    });
+    }, creditRes.logId);
 
     const result = JSON.parse(response.text);
     return { ...result, remainingCredits: creditRes.remaining } as GeneratedContent;
@@ -210,7 +222,7 @@ Idioma: Português (Brasil).`;
       responseMimeType: "application/json",
       responseSchema: sermonSchema,
       systemInstruction: SERMON_SYSTEM_INSTRUCTION
-    });
+    }, creditRes.logId);
 
     const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
@@ -243,7 +255,7 @@ Idioma: Português (Brasil).`;
       responseMimeType: "application/json",
       responseSchema: illustrationSchema,
       systemInstruction: "Você é um especialista em retórica e homilética cristã."
-    });
+    }, creditRes.logId);
 
     const result = JSON.parse(response.text) as GeneratedContent;
     return { ...result, remainingCredits: creditRes.remaining };
