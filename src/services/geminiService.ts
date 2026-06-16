@@ -145,7 +145,8 @@ export const generateAIContent = async (
     return { ...result, remainingCredits: creditRes.remaining };
 
   } else if (type === 'Série') {
-    const seriesSchema = {
+    // 1. Definição do esquema leve do Planejamento Geral (Outline) da Série
+    const seriesOutlineSchema = {
       type: Type.OBJECT,
       properties: {
         title: { type: Type.STRING, description: "O título geral da série" },
@@ -156,40 +157,95 @@ export const generateAIContent = async (
             type: Type.OBJECT,
             properties: {
               title: { type: Type.STRING, description: "Título do episódio incluindo [Ep. X]" },
-              content: { type: Type.STRING, description: "Sermão completo e detalhado do episódio" }
+              textBase: { type: Type.STRING, description: "Referência bíblica exata e texto bíblico integral por extenso" },
+              summary: { type: Type.STRING, description: "Resumo curto de 3 a 4 linhas detalhando o foco específico deste episódio" }
             },
-            required: ["title", "content"]
+            required: ["title", "textBase", "summary"]
           }
         }
       },
       required: ["title", "topic", "episodes"]
     };
 
-    const prompt = `Gere uma SÉRIE DE SERMÕES bíblicos completa com exatamente ${episodesCount} episódios.
+    // Prompt focado no planejamento conceitual de toda a série
+    const outlinePrompt = `Gere um PLANEJAMENTO / ESBOÇO GERAL para uma SÉRIE DE SERMÕES bíblicos com exatamente ${episodesCount} episódios.
 
-TEMA CENTRAL: ${topic}
+TEMA CENTRAL DA SÉRIE: ${topic}
 TOM DA SÉRIE: ${tone}
 
-REGRAS PARA A SÉRIE:
-1. UNIDADE: Todos os episódios devem estar conectados ao tema central, mas abordando ângulos diferentes e progressivos.
-2. ESTRUTURA DOS EPISÓDIOS: Cada sermão dentro do campo 'content' de cada episódio deve seguir OBRIGATORIAMENTE o modelo abaixo:
-
-${SERMON_STRUCTURE_TEMPLATE}
-
-3. TÍTULOS: O título de cada episódio deve obrigatoriamente começar com "[Ep. X] - ", onde X é o número do episódio.
-4. PROFUNDIDADE: Não economize palavras. Cada sermão deve ser rico, detalhado e profissional, preenchendo todas as seções do modelo.
-5. FORMATAÇÃO CRÍTICA: Os rótulos das seções (EXPLICAÇÃO, APLICAÇÃO, etc) devem estar em CAIXA ALTA e seguidos de dois pontos (:). NUNCA use bolinhas ou hifens no início dessas linhas.
+REGRAS DO PLANEJAMENTO:
+1. COERÊNCIA: Todos os episódios devem se conectar ao tema central de forma lógica, progressiva e complementar.
+2. DETALHE DO TEXTO BASE: Para cada episódio, defina uma referência bíblica exata e transcreva o texto bíblico na íntegra por extenso.
+3. RESUMO TEOLÓGICO: Escreva um resumo de 3 a 4 linhas focando na aplicação prática e foco teológico daquele episódio.
 
 Idioma: Português (Brasil).`;
 
-    const response = await callGeminiProxy(model, prompt, {
+    // Chamada inicial (deita apenas 1 crédito do usuário e registra o log com custo do planejamento)
+    const outlineResponse = await callGeminiProxy(model, outlinePrompt, {
       responseMimeType: "application/json",
-      responseSchema: seriesSchema,
-      systemInstruction: SERMON_SYSTEM_INSTRUCTION
+      responseSchema: seriesOutlineSchema,
+      systemInstruction: "Você é um teólogo cristão sênior, especialista em homilética, exegese bíblica e planejamento de séries de sermões."
     }, creditRes.logId);
 
-    const result = JSON.parse(response.text);
-    return { ...result, remainingCredits: creditRes.remaining } as GeneratedContent;
+    const outline = JSON.parse(outlineResponse.text);
+
+    const episodes: { title: string; content: string }[] = [];
+
+    // Esquema individual para geração do Sermão de cada episódio
+    const episodeSchema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        content: { type: Type.STRING, description: "Sermão completo e detalhado do episódio seguindo o modelo homilético" }
+      },
+      required: ["title", "content"]
+    };
+
+    // 2. Loop de geração sequencial individual para garantir profundidade absoluta sem estourar limites de tokens
+    for (let i = 0; i < outline.episodes.length; i++) {
+      const epOutline = outline.episodes[i];
+      
+      const epPrompt = `Gere o sermão bíblico COMPLETO, PROFUNDO e ALTAMENTE DETALHADO para o Episódio ${i + 1} de nossa série de sermões.
+
+TÍTULO GERAL DA SÉRIE: ${outline.title}
+TEMA CENTRAL DA SÉRIE: ${topic}
+TOM DA MENSAGEM: ${tone}
+
+DADOS ESPECÍFICOS DO EPISÓDIO PARA GERAR:
+- TÍTULO DO EPISÓDIO: ${epOutline.title}
+- TEXTO BASE DO EPISÓDIO: ${epOutline.textBase}
+- RESUMO DO FOCO DO EPISÓDIO: ${epOutline.summary}
+
+REGRAS DE CONTEXTO DA SÉRIE:
+- Esta é uma série contínua de sermões. Certifique-se de manter a perfeita coerência teológica com os demais episódios planejados abaixo:
+${JSON.stringify(outline.episodes)}
+
+REGRAS DE FORMATAÇÃO E ESTRUTURA (OBRIGATÓRIO):
+Você DEVE preencher e estruturar o campo 'content' seguindo rigorosamente a estrutura técnica homilética abaixo:
+${SERMON_STRUCTURE_TEMPLATE}
+
+Idioma: Português (Brasil).`;
+
+      // Chamamos o proxy para cada episódio sem enviar logId para não deduzir créditos novamente nem gerar logs duplicados
+      const epResponse = await callGeminiProxy(model, epPrompt, {
+        responseMimeType: "application/json",
+        responseSchema: episodeSchema,
+        systemInstruction: SERMON_SYSTEM_INSTRUCTION
+      });
+
+      const epData = JSON.parse(epResponse.text);
+      episodes.push({
+        title: epOutline.title,
+        content: epData.content
+      });
+    }
+
+    return {
+      title: outline.title,
+      topic: outline.topic || topic,
+      episodes,
+      remainingCredits: creditRes.remaining
+    } as GeneratedContent;
 
   } else if (type === 'Sermão') {
     const sermonSchema = {
