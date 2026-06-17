@@ -67,7 +67,7 @@ export default function Generate() {
   }, [loading, generatorForm.type]);
   
   const handleGenerate = async (customType?: ItemType | any, customTopic?: string, extraParams?: any) => {
-    const activeType = (customType && typeof customType === 'string') ? customType : generatorForm.type;
+    const activeType = ((customType && typeof customType === 'string') ? customType : generatorForm.type) as ItemType;
     const activeTopic = (customTopic && typeof customTopic === 'string') ? customTopic : generatorForm.topic;
 
     if (!activeTopic.trim() || !auth.user?.id) return;
@@ -81,7 +81,10 @@ export default function Generate() {
         activeTopic,
         generatorForm.tone,
         generatorForm.episodes,
-        extraParams
+        extraParams,
+        activeType === 'Série' ? (current, total) => {
+          setProgress({ current, total, stage: 'ai' });
+        } : undefined
       );
 
       if (data.remainingCredits !== undefined) {
@@ -89,7 +92,7 @@ export default function Generate() {
       }
 
       if (activeType === 'Série' && data.episodes) {
-        setProgress(prev => ({ ...prev, stage: 'saving' }));
+        setProgress(prev => ({ ...prev, stage: 'saving', current: 0 }));
         
         // 1. Salva o item "Pai" da série
         const seriesId = await databaseService.saveNewContent({
@@ -549,10 +552,14 @@ export default function Generate() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-widest">
-                      {progress.stage === 'ai' ? 'Consultando Inteligência' : 'Organizando Episódios'}
+                      {progress.stage === 'ai'
+                        ? (progress.current > 0 ? `Gerando Episódio ${progress.current} de ${progress.total}` : 'Planejando Série')
+                        : 'Organizando Episódios'}
                     </p>
                     <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.15em] mt-0.5">
-                      {progress.stage === 'ai' ? 'Articulando temas bíblicos...' : `Salvando ${progress.current} de ${progress.total}`}
+                      {progress.stage === 'ai'
+                        ? (progress.current > 0 ? 'Exegese e elaboração homilética...' : 'Articulando temas bíblicos...')
+                        : `Salvando ${progress.current} de ${progress.total}`}
                     </p>
                   </div>
                 </div>

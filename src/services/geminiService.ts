@@ -49,7 +49,8 @@ export const generateAIContent = async (
   topic: string,
   tone: string,
   episodesCount: number = 4,
-  extraParams?: any
+  extraParams?: any,
+  onProgress?: (current: number, total: number) => void
 ) => {
   const model = "gemini-3-flash-preview";
 
@@ -203,6 +204,9 @@ Idioma: Português (Brasil).`;
 
     // 2. Loop de geração sequencial individual para garantir profundidade absoluta sem estourar limites de tokens
     for (let i = 0; i < outline.episodes.length; i++) {
+      if (onProgress) {
+        onProgress(i + 1, outline.episodes.length);
+      }
       const epOutline = outline.episodes[i];
       
       const epPrompt = `Gere o sermão bíblico COMPLETO, PROFUNDO e ALTAMENTE DETALHADO para o Episódio ${i + 1} de nossa série de sermões.
