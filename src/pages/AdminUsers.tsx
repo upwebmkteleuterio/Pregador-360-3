@@ -25,14 +25,33 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Controle de filtro de mês
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  // Define o mês atual local (ex: "2026-06") como padrão de forma segura contra fuso-horários
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  });
+
+  // Gera dinamicamente a lista dos últimos 24 meses para seleção no dropdown
+  const getAvailableMonths = () => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      options.push(`${y}-${m}`);
+    }
+    return options;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       setError(null);
       try {
-        // 1. Chamada segura para buscar usuários via Edge Function
+        // 1. Busca usuários via Edge Function
         const { data: userData, error: funcError } = await supabase.functions.invoke('admin-get-users');
 
         if (funcError) throw funcError;
@@ -48,11 +67,27 @@ export default function AdminUsers() {
         
         setUsers(formattedUsers);
 
-        // 2. Buscar logs de consumo de créditos e tokens do banco
-        const { data: logsData, error: logsError } = await supabase
+        // 2. Busca logs de consumo de créditos e tokens do banco filtrando diretamente no banco (Database-side filtering)
+        let query = supabase
           .from('credits_log')
           .select('user_id, prompt_tokens, candidates_tokens, total_tokens, estimated_cost_usd, created_at')
           .order('created_at', { ascending: false });
+
+        if (selectedMonth !== 'all') {
+          const [year, monthStr] = selectedMonth.split('-');
+          const yearNum = parseInt(year, 10);
+          const monthNum = parseInt(monthStr, 10);
+          
+          // Define os limites UTC seguros do mês selecionado
+          const startDate = new Date(Date.UTC(yearNum, monthNum - 1, 1, 0, 0, 0)).toISOString();
+          const endDate = new Date(Date.UTC(yearNum, monthNum, 1, 0, 0, 0)).toISOString();
+          
+          query = query
+            .gte('created_at', startDate)
+            .lt('created_at', endDate);
+        }
+
+        const { data: logsData, error: logsError } = await query;
 
         if (logsError) throw logsError;
         setLogs(logsData || []);
@@ -68,30 +103,7 @@ export default function AdminUsers() {
     };
 
     fetchData();
-  }, []);
-
-  // Extrair lista de meses disponíveis dinamicamente a partir dos logs de consumo
-  const getAvailableMonths = () => {
-    const monthsSet = new Set<string>();
-    logs.forEach(log => {
-      if (log.created_at) {
-        const date = new Date(log.created_at);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        monthsSet.add(`${year}-${month}`);
-      }
-    });
-    
-    // Se vazio, adiciona o mês atual por segurança
-    if (monthsSet.size === 0) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      monthsSet.add(`${now.getFullYear()}-${month}`);
-    }
-    
-    return Array.from(monthsSet).sort().reverse(); // Mais recente primeiro
-  };
+  }, [selectedMonth]); // Recarrega os dados do banco toda vez que o mês selecionado é alterado
 
   const formatMonthLabel = (yearMonth: string) => {
     const [year, monthStr] = yearMonth.split('-');
@@ -103,27 +115,16 @@ export default function AdminUsers() {
     return `${monthNames[monthIdx]} de ${year}`;
   };
 
-  // Filtrar logs de acordo com o mês selecionado
-  const filteredLogs = selectedMonth === 'all'
-    ? logs
-    : logs.filter(log => {
-        if (!log.created_at) return false;
-        const date = new Date(log.created_at);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}` === selectedMonth;
-      });
-
-  // Métricas Globais (KPIs) com base nos logs filtrados
-  const totalTokens = filteredLogs.reduce((acc, log) => acc + (log.total_tokens || 0), 0);
-  const totalCost = filteredLogs.reduce((acc, log) => acc + (Number(log.estimated_cost_usd) || 0), 0);
-  const totalGenerations = filteredLogs.filter(log => log.total_tokens > 0).length;
+  // Métricas Globais (KPIs) com base nos logs filtrados no banco
+  const totalTokens = logs.reduce((acc, log) => acc + (log.total_tokens || 0), 0);
+  const totalCost = logs.reduce((acc, log) => acc + (Number(log.estimated_cost_usd) || 0), 0);
+  const totalGenerations = logs.filter(log => log.total_tokens > 0).length;
 
   const avgTokensPerGen = totalGenerations > 0 ? Math.round(totalTokens / totalGenerations) : 0;
   const avgCostPerGen = totalGenerations > 0 ? (totalCost / totalGenerations) : 0;
 
   // Mapear logs de consumo agrupados por ID de usuário
-  const userStatsMap = filteredLogs.reduce((acc: any, log) => {
+  const userStatsMap = logs.reduce((acc: any, log) => {
     const userId = log.user_id;
     if (!acc[userId]) {
       acc[userId] = {
@@ -171,9 +172,9 @@ export default function AdminUsers() {
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="bg-transparent text-sm font-bold text-[var(--text-primary)] focus:outline-none cursor-pointer w-full sm:w-auto"
           >
-            <option value="all" className="bg-[var(--bg-card)] text-white">Todos os Períodos</option>
+            <option value="all" className="bg-[var(--bg-card)] text-zinc-900">Todos os Períodos</option>
             {getAvailableMonths().map(m => (
-              <option key={m} value={m} className="bg-[var(--bg-card)] text-white">
+              <option key={m} value={m} className="bg-white text-zinc-900 font-semibold">
                 {formatMonthLabel(m)}
               </option>
             ))}
